@@ -92,6 +92,16 @@ export function activeExclusions(draft: EventDraft): [string, string][] {
   return draft.exclusions.filter(([a, b]) => names.has(key(a)) && names.has(key(b)))
 }
 
+/** Who `name` can still be added to a pair to avoid with: not themselves, and not anyone already paired with them. */
+export function availablePartners(draft: EventDraft, name: string): string[] {
+  const taken = new Set([key(name)])
+  for (const [x, y] of activeExclusions(draft)) {
+    if (key(x) === key(name)) taken.add(key(y))
+    if (key(y) === key(name)) taken.add(key(x))
+  }
+  return participantNames(draft).filter((n) => !taken.has(key(n)))
+}
+
 export function answeredCount(draft: EventDraft): number {
   return participantNames(draft).filter((n) => Object.keys(draft.answersByName[key(n)] ?? {}).length > 0).length
 }

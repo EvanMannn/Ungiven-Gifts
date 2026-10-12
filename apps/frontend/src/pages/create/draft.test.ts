@@ -5,6 +5,7 @@ import {
   activeExclusions,
   adminPasswordEntered,
   applyImport,
+  availablePartners,
   emptyDraft,
   participantNames,
   toPayload,
@@ -106,6 +107,20 @@ describe('validGroupSizes', () => {
     expect(validGroupSizes(9)).toEqual([3])
     expect(validGroupSizes(7)).toEqual([])
     expect(validGroupSizes(3)).toEqual([])
+  })
+})
+
+describe('availablePartners', () => {
+  it('leaves out the person themselves and anyone already paired with them', () => {
+    const d = draft({ exclusions: [['Alice', 'Bob'], ['cara', 'ALICE']] })
+    expect(availablePartners(d, 'alice')).toEqual(['Dan'])
+    expect(availablePartners(d, 'Bob')).toEqual(['Cara', 'Dan'])
+    expect(availablePartners(d, 'Dan')).toEqual(['Alice', 'Bob', 'Cara'])
+  })
+
+  it('is empty once someone is paired with everyone else', () => {
+    const d = draft({ exclusions: [['Alice', 'Bob'], ['Alice', 'Cara'], ['Alice', 'Dan']] })
+    expect(availablePartners(d, 'Alice')).toEqual([])
   })
 })
 

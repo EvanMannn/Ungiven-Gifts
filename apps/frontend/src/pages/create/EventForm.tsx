@@ -20,6 +20,7 @@ import {
   activeExclusions,
   answeredCount,
   applyImport,
+  availablePartners,
   key,
   participantNames,
   restrictions,
@@ -248,11 +249,19 @@ function ExclusionsSection({ draft, onChange, names }: Omit<Props, 'errors'> & {
   const [a, setA] = useState('')
   const [b, setB] = useState('')
   const exclusions = activeExclusions(draft)
+  // Only people who still have someone left to be paired with are worth offering on the left.
+  const firstOptions = names.filter((n) => availablePartners(draft, n).length > 0)
+  // The right side is built from the left choice, so it stays empty (and locked) until one is made.
+  const secondOptions = a ? availablePartners(draft, a) : []
+
+  function chooseFirst(name: string) {
+    setA(name)
+    setB('') // The old choice may not be valid for the new person.
+  }
 
   function add() {
-    if (!a || !b || key(a) === key(b)) return
-    const pairKey = (x: string, y: string) => [key(x), key(y)].sort().join('|')
-    if (!exclusions.some(([x, y]) => pairKey(x, y) === pairKey(a, b))) onChange({ exclusions: [...exclusions, [a, b]] })
+    if (!a || !secondOptions.some((n) => key(n) === key(b))) return
+    onChange({ exclusions: [...exclusions, [a, b]] })
     setA('')
     setB('')
   }
@@ -263,13 +272,21 @@ function ExclusionsSection({ draft, onChange, names }: Omit<Props, 'errors'> & {
         <p className="text-sm text-muted-foreground">Add participants first.</p>
       ) : (
         <div className="flex flex-col gap-2 sm:flex-row">
-          <SimpleSelect aria-label="First person" value={a} onChange={setA} options={names} placeholder="Someone" />
+          <SimpleSelect
+            aria-label="First person"
+            value={a}
+            onChange={chooseFirst}
+            options={firstOptions}
+            placeholder={firstOptions.length ? 'Someone' : 'Everyone is already paired'}
+            disabled={firstOptions.length === 0}
+          />
           <SimpleSelect
             aria-label="Second person"
             value={b}
             onChange={setB}
-            options={names.filter((n) => key(n) !== key(a))}
-            placeholder="shouldn't be paired with"
+            options={secondOptions}
+            placeholder={a ? "shouldn't be paired with" : 'Pick someone first'}
+            disabled={!a}
           />
           <Button type="button" variant="outline" onClick={add} disabled={!a || !b}>
             <Plus /> Add
