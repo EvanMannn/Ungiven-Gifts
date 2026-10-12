@@ -3,7 +3,7 @@
 import random
 
 from . import pairing
-from .models import EventCreate, EventPublic, EventRecord, ParticipantRecord, ParticipantSummary
+from .models import EventCreate, EventPublic, EventRecord, ParticipantRecord
 from .security import hash_admin_key, new_admin_key, new_participant_id
 
 
@@ -111,10 +111,6 @@ def to_public(event: EventRecord) -> EventPublic:
         description=event.description,
         budget=event.budget,
         exchange_date=event.exchange_date,
-        participants=[
-            ParticipantSummary(id=p.id, name=p.name, claimed=p.password_hash is not None)
-            for p in event.participants
-        ],
         has_questionnaire=bool(event.questions),
         has_restrictions=bool(event.restrictions),
         groups_enabled=event.group_size is not None,

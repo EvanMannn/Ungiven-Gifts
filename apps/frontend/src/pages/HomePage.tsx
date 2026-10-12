@@ -37,7 +37,7 @@ export default function HomePage() {
           groups that can help each other.
         </Step>
         <Step icon={<Link2 />} title="3. Share one link">
-          Players pick their name, set a password, and see their giftee, what that person likes, and their restriction.
+          Players enter their name, set a password, and see their giftee, what that person likes, and their restriction.
         </Step>
       </section>
 

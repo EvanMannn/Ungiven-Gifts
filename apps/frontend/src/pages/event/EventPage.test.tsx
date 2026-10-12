@@ -11,6 +11,7 @@ vi.mock('@/api/client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/api/client')>()),
   api: {
     getEvent: vi.fn(),
+    findParticipant: vi.fn(),
     login: vi.fn(),
     dashboard: vi.fn(),
     chooseRestriction: vi.fn(),
@@ -25,10 +26,6 @@ const event: EventPublic = {
   description: '',
   budget: '$40',
   exchange_date: '2026-12-18',
-  participants: [
-    { id: 'p1', name: 'Alice', claimed: false },
-    { id: 'p2', name: 'Bob', claimed: true },
-  ],
   has_questionnaire: true,
   has_restrictions: true,
   groups_enabled: true,
@@ -59,6 +56,9 @@ describe('EventPage', () => {
   beforeEach(() => {
     localStorage.clear()
     vi.mocked(api.getEvent).mockReset().mockResolvedValue(event)
+    vi.mocked(api.findParticipant)
+      .mockReset()
+      .mockResolvedValue({ participant_id: 'p1', name: 'Alice', claimed: false })
     vi.mocked(api.login).mockReset().mockResolvedValue({ token: 'tok', participant_id: 'p1', first_login: true })
     vi.mocked(api.dashboard).mockReset().mockResolvedValue(dashboard)
     vi.mocked(api.chooseRestriction).mockReset().mockResolvedValue({ ...dashboard, chosen_restriction: 'No tutors' })
@@ -71,8 +71,11 @@ describe('EventPage', () => {
     const user = userEvent.setup()
     renderPage()
 
-    await user.click(await screen.findByRole('radio', { name: 'Alice' }))
-    await user.type(screen.getByLabelText('Choose a password, Alice'), 'pw')
+    await user.type(await screen.findByLabelText('Your name'), 'alice')
+    await user.click(screen.getByRole('button', { name: 'Continue' }))
+    expect(api.findParticipant).toHaveBeenCalledWith('abc', 'alice')
+
+    await user.type(await screen.findByLabelText('Choose a password'), 'pw')
     await user.click(screen.getByRole('button', { name: 'Set password and continue' }))
     expect(api.login).toHaveBeenCalledWith('abc', 'p1', 'pw')
     expect(session.token('abc')).toBe('tok')
@@ -98,6 +101,31 @@ describe('EventPage', () => {
     await user.click(screen.getByRole('button', { name: 'Go to my dashboard' }))
     expect(await screen.findByText("You're building for")).toBeInTheDocument()
     expect(api.finishOnboarding).toHaveBeenCalledWith('abc', 'tok')
+  })
+
+  it('shows an error for a name that is not in the event', async () => {
+    vi.mocked(api.findParticipant).mockRejectedValue(new ApiError(404, 'Nobody by that name is in this event.'))
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.type(await screen.findByLabelText('Your name'), 'Alicia')
+    await user.click(screen.getByRole('button', { name: 'Continue' }))
+    expect(await screen.findByText('Nobody by that name is in this event.')).toBeInTheDocument()
+    expect(screen.queryByLabelText(/password/i)).not.toBeInTheDocument()
+  })
+
+  it('asks a returning participant for their password, and lets them go back', async () => {
+    vi.mocked(api.findParticipant).mockResolvedValue({ participant_id: 'p2', name: 'Bob', claimed: true })
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.type(await screen.findByLabelText('Your name'), 'Bob')
+    await user.click(screen.getByRole('button', { name: 'Continue' }))
+    expect(await screen.findByText('Enter your password.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Log in' })).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: 'Not Bob?' }))
+    expect(screen.getByLabelText('Your name')).toHaveValue('Bob')
   })
 
   it('goes straight to the dashboard for a returning participant', async () => {

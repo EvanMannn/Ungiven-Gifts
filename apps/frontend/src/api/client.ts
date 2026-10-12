@@ -6,6 +6,7 @@ import type {
   EventPublic,
   EventUpdate,
   LoginResponse,
+  ParticipantMatch,
 } from './types'
 
 const BASE_URL = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '')
@@ -78,6 +79,8 @@ export const api = {
   createEvent: (body: EventCreate) => request<EventCreated>('/events', { method: 'POST', body }),
   getEvent: (slug: string) => request<EventPublic>(path`/events/${slug}`),
 
+  findParticipant: (slug: string, name: string) =>
+    request<ParticipantMatch>(path`/events/${slug}/participants/find`, { method: 'POST', body: { name } }),
   login: (slug: string, participantId: string, password: string) =>
     request<LoginResponse>(path`/events/${slug}/login`, {
       method: 'POST',

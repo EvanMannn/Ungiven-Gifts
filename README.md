@@ -2,7 +2,7 @@
 
 Ungiven Gifts is a Magic: The Gathering secret santa website. It helps organize the event, keep participants informed, handle deck restrictions, and more.
 
-It works like When2Meet. Anyone can create an event without an account. They add players, deck restrictions, exclusions, and optional build groups. The site runs the draw and gives back a link to share. Each participant opens the link, picks their name, sets a password, and sees who they're building for.
+It works like When2Meet. Anyone can create an event without an account. They add players, deck restrictions, exclusions, and optional build groups. The site runs the draw and gives back a link to share. Each participant opens the link, enters their name, sets a password, and sees who they're building for.
 
 ## Repo layout
 

@@ -112,23 +112,29 @@ class EventRecord(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-class ParticipantSummary(BaseModel):
-    id: str
-    name: str
-    claimed: bool
-
-
 class EventPublic(BaseModel):
+    # No participant list: people type their own name to log in, so nobody can pick someone
+    # else's name off a list by mistake.
     slug: str
     name: str
     format: str
     description: str
     budget: str | None
     exchange_date: date | None
-    participants: list[ParticipantSummary]
     has_questionnaire: bool
     has_restrictions: bool
     groups_enabled: bool
+
+
+class FindParticipant(BaseModel):
+    name: Name
+
+
+class ParticipantMatch(BaseModel):
+    participant_id: str
+    name: str
+    # Whether a password is already set, so the login form knows to ask for it or to create it.
+    claimed: bool
 
 
 class LoginRequest(BaseModel):

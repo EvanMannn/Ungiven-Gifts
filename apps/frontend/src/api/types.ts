@@ -28,12 +28,6 @@ export interface EventCreated {
   organizer_token: string | null
 }
 
-export interface ParticipantSummary {
-  id: string
-  name: string
-  claimed: boolean
-}
-
 export interface EventPublic {
   slug: string
   name: string
@@ -41,10 +35,16 @@ export interface EventPublic {
   description: string
   budget: string | null
   exchange_date: string | null
-  participants: ParticipantSummary[]
   has_questionnaire: boolean
   has_restrictions: boolean
   groups_enabled: boolean
+}
+
+/** A typed name matched to a participant. `claimed` means they've already set a password. */
+export interface ParticipantMatch {
+  participant_id: string
+  name: string
+  claimed: boolean
 }
 
 export interface LoginResponse {
