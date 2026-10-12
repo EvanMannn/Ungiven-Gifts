@@ -14,6 +14,7 @@ concurrency:
 
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
 jobs:
   deploy:
@@ -26,18 +27,8 @@ jobs:
         github.event.workflow_run.event == 'push' &&
         github.event.workflow_run.head_repository.full_name == github.repository
       )
-    name: Deploy ${{ matrix.app }} to Vercel
+    name: Deploy to Vercel
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - app: backend
-            project_secret: VERCEL_PROJECT_ID_BACKEND
-          - app: frontend
-            project_secret: VERCEL_PROJECT_ID_FRONTEND
-    env:
-      VERCEL_PROJECT_ID: ${{ secrets[matrix.project_secret] }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -48,7 +39,7 @@ jobs:
           node-version: 22
       # Pinned so a CLI release can't change deploys without a commit here. Bump deliberately.
       - run: npm install --global vercel@63.1.2
-      # Each Vercel project has its Root Directory set to apps/<app>, so the CLI runs from the
-      # repo root and Vercel builds the right folder remotely.
+      # One project for both apps: the root vercel.json defines them as services, and Vercel
+      # builds each one remotely.
       - name: Deploy
         run: vercel deploy --prod --yes --token="${{ secrets.VERCEL_TOKEN }}"

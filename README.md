@@ -12,7 +12,8 @@ apps/
   frontend/   React + TypeScript SPA (Vite)
 .github/workflows/
   ci.yml      lint, typecheck, tests, build, Docker build on every push and PR
-  deploy.yml  deploys both apps to Vercel after CI passes on main
+  deploy.yml  deploys to Vercel after CI passes on main
+vercel.json   Vercel services: /api/* → backend, everything else → frontend
 docker-compose.yml   local MongoDB + API
 ```
 
@@ -54,18 +55,15 @@ Pages:
 
 ## Deployment (Vercel, free tier)
 
-Each app is its own Vercel project. GitHub Actions deploys both of them. Vercel's own Git integration is turned off in each `vercel.json`, so a commit doesn't get deployed twice.
+Both apps deploy as one Vercel project using [services](https://vercel.com/docs/services), configured in the root `vercel.json`. Requests to `/api/*` go to the FastAPI backend, and everything else goes to the frontend. Everything is on one domain, so there's no CORS setup and no API URL to configure. GitHub Actions does the deploying. Vercel's own Git integration is turned off in `vercel.json`, so a commit doesn't get deployed twice.
 
 1. **MongoDB:** create a free M0 cluster on [MongoDB Atlas](https://www.mongodb.com/atlas). Vercel functions don't have fixed IPs, so allow access from `0.0.0.0/0`.
-2. **Vercel projects:** create two projects from this repo.
-   - `ungiven-gifts-api`: Root Directory `apps/backend`. Set these environment variables:
-     - `MONGODB_URI`
-     - `SECRET_KEY` (a long random string)
-     - `CORS_ORIGINS` (the frontend URL)
-   - `ungiven-gifts-web`: Root Directory `apps/frontend`, framework Vite. Set `VITE_API_URL` to the API URL.
+2. **Vercel project:** import this repo as one project and leave the Root Directory at the repo root. Set these environment variables:
+   - `MONGODB_URI`
+   - `SECRET_KEY` (a long random string)
 3. **GitHub secrets** (Settings → Secrets and variables → Actions):
    - `VERCEL_TOKEN`: from vercel.com/account/tokens
    - `VERCEL_ORG_ID`: the team or user ID (Vercel settings, or `.vercel/project.json` after running `vercel link`)
-   - `VERCEL_PROJECT_ID_BACKEND` and `VERCEL_PROJECT_ID_FRONTEND`
+   - `VERCEL_PROJECT_ID`: the project's Settings → General
 
 Vercel deploys from source and doesn't use the Dockerfile. The image is there so the API can run on any container host, and CI builds it to make sure it stays working.
