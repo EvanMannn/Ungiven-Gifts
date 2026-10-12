@@ -4,37 +4,50 @@
 /* shadcn components use `dark:` variants; the site is dark-only, so <html> always has .dark */
 @custom-variant dark (&:is(.dark *));
 
+/* "Frost": midnight navy, icy blue and silver, with a cranberry accent. */
 :root {
   --radius: 0.625rem;
 
-  --background: #0b100e;
-  --foreground: #ece8dc;
-  --card: #131a17;
-  --card-foreground: #ece8dc;
-  --popover: #131a17;
-  --popover-foreground: #ece8dc;
+  --background: #0a0f1a;
+  --foreground: #e8edf5;
+  --card: #121a29;
+  --card-foreground: #e8edf5;
+  --popover: #121a29;
+  --popover-foreground: #e8edf5;
 
-  /* Pine green: main actions */
-  --primary: #2f8a57;
-  --primary-foreground: #f5f2e8;
-  --secondary: #1c2621;
-  --secondary-foreground: #ece8dc;
-  --muted: #1a221e;
-  --muted-foreground: #98a59d;
-  --accent: #1f2b25;
-  --accent-foreground: #ece8dc;
-  --destructive: #c0392b;
+  /* Icy blue: main actions */
+  --primary: #3f7fc4;
+  --primary-foreground: #f4f8ff;
+  --secondary: #19233a;
+  --secondary-foreground: #e8edf5;
+  --muted: #162033;
+  --muted-foreground: #93a1bb;
+  --accent: #1c2740;
+  --accent-foreground: #e8edf5;
+  --destructive: #b8324b;
 
-  --border: #26332c;
-  --input: #2c3a33;
-  --ring: #d4af37;
+  --border: #233049;
+  --input: #2a3854;
+  --ring: #c9d4e6;
 
-  /* Festive accents */
-  --holly: #c0392b;
-  --holly-light: #e07468;
-  --gold: #d4af37;
-  --gold-foreground: #1a1406;
-  --pine-deep: #123a26;
+  /* Festive accents, named by job rather than color so a new palette only changes values. */
+  /* brand: the main call-to-action buttons, "Gifts" in the logo, the giftee's name (cranberry) */
+  --brand: #b8324b;
+  --brand-light: #e27a8d;
+  --brand-foreground: #ffffff;
+  /* highlight: icons, badges, step labels and chosen items (silver) */
+  --highlight: #cdd7e6;
+  --highlight-foreground: #0d1320;
+  /* selected: the background behind a selected option (deep blue) */
+  --selected: #16294a;
+
+  /* Error text and icons. Kept apart from brand so the accent can change without turning error
+     messages that color too. */
+  --error: #e27a8d;
+
+  /* The two soft glows behind the page */
+  --glow-1: rgb(63 127 196 / 0.2);
+  --glow-2: rgb(205 215 230 / 0.07);
 }
 
 @theme inline {
@@ -62,11 +75,13 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  --color-holly: var(--holly);
-  --color-holly-light: var(--holly-light);
-  --color-gold: var(--gold);
-  --color-gold-foreground: var(--gold-foreground);
-  --color-pine-deep: var(--pine-deep);
+  --color-brand: var(--brand);
+  --color-brand-light: var(--brand-light);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-error: var(--error);
+  --color-highlight: var(--highlight);
+  --color-highlight-foreground: var(--highlight-foreground);
+  --color-selected: var(--selected);
 }
 
 @layer base {
@@ -79,8 +94,8 @@
   body {
     @apply min-h-dvh bg-background text-foreground antialiased;
     background-image:
-      radial-gradient(ellipse 80% 50% at 50% -10%, rgb(47 138 87 / 0.18), transparent),
-      radial-gradient(ellipse 40% 30% at 100% 0%, rgb(192 57 43 / 0.1), transparent);
+      radial-gradient(ellipse 80% 50% at 50% -10%, var(--glow-1), transparent),
+      radial-gradient(ellipse 40% 30% at 100% 0%, var(--glow-2), transparent);
     background-attachment: fixed;
   }
 }

@@ -86,8 +86,8 @@ function Choice({ selected, onClick, children }: { selected: boolean; onClick: (
       aria-checked={selected}
       onClick={onClick}
       className={cn(
-        'cursor-pointer rounded-lg border p-3 text-left text-sm transition-colors hover:border-gold/60',
-        selected && 'border-gold bg-pine-deep/50',
+        'cursor-pointer rounded-lg border p-3 text-left text-sm transition-colors hover:border-highlight/60',
+        selected && 'border-highlight bg-selected/50',
       )}
     >
       {children}

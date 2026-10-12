@@ -100,7 +100,7 @@ export function LoginCard({ event, onLoggedIn }: { event: EventPublic; onLoggedI
                 <Button type="button" variant="ghost" onClick={notMe} disabled={submitting}>
                   Not {match.name}?
                 </Button>
-                <Button type="submit" size="lg" variant="holly" disabled={!password || submitting}>
+                <Button type="submit" size="lg" variant="brand" disabled={!password || submitting}>
                   {submitting && <Loader2 className="animate-spin" />}
                   {match.claimed ? 'Log in' : 'Set password and continue'}
                 </Button>

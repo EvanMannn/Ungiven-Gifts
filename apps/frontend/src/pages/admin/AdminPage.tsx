@@ -65,7 +65,7 @@ export default function AdminPage() {
         <Card className="mx-auto w-full max-w-md">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <KeyRound className="size-5 text-gold" /> Organizer login
+              <KeyRound className="size-5 text-highlight" /> Organizer login
             </CardTitle>
             <CardDescription>Enter the admin password you chose when you created the event.</CardDescription>
           </CardHeader>

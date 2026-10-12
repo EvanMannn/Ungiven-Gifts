@@ -10,7 +10,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col gap-20">
       <section className="flex flex-col items-center gap-5 pt-8 text-center sm:pt-16">
-        <Badge variant="gold">Secret santa for Magic: The Gathering</Badge>
+        <Badge variant="highlight">Secret santa for Magic: The Gathering</Badge>
         <h1 className="text-5xl sm:text-7xl">
           <Wordmark />
         </h1>
@@ -18,7 +18,7 @@ export default function HomePage() {
           Build a deck for a friend, get one built for you. Add your playgroup, set some deckbuilding restrictions, and
           everyone gets one link to see who they're brewing for.
         </p>
-        <Button asChild size="xl" variant="holly" className="mt-4">
+        <Button asChild size="xl" variant="brand" className="mt-4">
           <Link to="/create">
             <Sparkles />
             Create an event
@@ -58,7 +58,7 @@ function Step({ icon, title, children }: { icon: ReactNode; title: string; child
   return (
     <Card className="gap-3">
       <CardContent className="flex flex-col gap-2">
-        <div className="text-gold [&_svg]:size-6">{icon}</div>
+        <div className="text-highlight [&_svg]:size-6">{icon}</div>
         <h2 className="font-bold">{title}</h2>
         <p className="text-sm text-muted-foreground">{children}</p>
       </CardContent>

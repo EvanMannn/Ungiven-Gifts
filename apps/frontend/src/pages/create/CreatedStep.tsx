@@ -11,9 +11,9 @@ export function CreatedStep({ created, eventName }: { created: EventCreated; eve
   const playing = created.organizer_token !== null
 
   return (
-    <Card className="mx-auto max-w-2xl border-gold/40">
+    <Card className="mx-auto max-w-2xl border-highlight/40">
       <CardHeader className="items-center text-center">
-        <PartyPopper className="mx-auto size-10 text-gold" aria-hidden />
+        <PartyPopper className="mx-auto size-10 text-highlight" aria-hidden />
         <CardTitle className="text-2xl">{eventName} is ready</CardTitle>
         <CardDescription>Names are drawn. Send everyone the participant link.</CardDescription>
       </CardHeader>
@@ -25,8 +25,8 @@ export function CreatedStep({ created, eventName }: { created: EventCreated; eve
         <div className="flex flex-col gap-2">
           <h3 className="text-sm font-medium">Admin page</h3>
           <CopyField label="Admin link" value={adminUrl(created.slug)} />
-          <Alert className="border-gold/40">
-            <ShieldAlert className="text-gold" />
+          <Alert className="border-highlight/40">
+            <ShieldAlert className="text-highlight" />
             <AlertTitle>Log in with your admin password</AlertTitle>
             <AlertDescription>
               This browser is already logged in. Anywhere else, open this link or use the organizer login on the
@@ -37,7 +37,7 @@ export function CreatedStep({ created, eventName }: { created: EventCreated; eve
       </CardContent>
       <CardFooter className="flex flex-wrap justify-center gap-2">
         {playing && (
-          <Button asChild variant="holly" size="lg">
+          <Button asChild variant="brand" size="lg">
             <Link to={`/e/${created.slug}`}>See who you drew</Link>
           </Button>
         )}

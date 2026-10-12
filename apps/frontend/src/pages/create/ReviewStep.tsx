@@ -14,7 +14,7 @@ export function ReviewStep({ payload }: { payload: EventCreate }) {
         <CardTitle className="text-2xl">{payload.name}</CardTitle>
         <div className="flex flex-wrap gap-2">
           <Badge>{payload.format}</Badge>
-          {payload.budget && <Badge variant="gold">{payload.budget}</Badge>}
+          {payload.budget && <Badge variant="highlight">{payload.budget}</Badge>}
           {payload.exchange_date && <Badge variant="outline">{formatDate(payload.exchange_date)}</Badge>}
         </div>
       </CardHeader>

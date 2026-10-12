@@ -44,13 +44,13 @@ export function RestrictionPicker({
             disabled={saving !== null}
             onClick={() => choose(title)}
             className={cn(
-              'relative flex min-h-24 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-5 text-center text-balance transition-colors hover:border-gold/60 disabled:cursor-wait',
-              chosen ? 'border-gold bg-pine-deep/60' : 'border-border',
+              'relative flex min-h-24 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-5 text-center text-balance transition-colors hover:border-highlight/60 disabled:cursor-wait',
+              chosen ? 'border-highlight bg-selected/60' : 'border-border',
             )}
           >
-            <span className={cn('font-bold', chosen && 'text-gold')}>{title}</span>
+            <span className={cn('font-bold', chosen && 'text-highlight')}>{title}</span>
             {description && <span className="text-sm text-muted-foreground">{description}</span>}
-            {chosen && <Check className="absolute top-2 right-2 size-4 text-gold" aria-hidden />}
+            {chosen && <Check className="absolute top-2 right-2 size-4 text-highlight" aria-hidden />}
             {saving === title && <Loader2 className="absolute top-2 right-2 size-4 animate-spin" aria-hidden />}
           </button>
         )

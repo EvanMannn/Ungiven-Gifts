@@ -458,8 +458,8 @@ function OrganizerSection({ draft, errors, onChange, names }: Props & { names: s
       title="Organizer settings"
       description="Your admin password lets you manage the event: edit details and reset forgotten passwords."
     >
-      <Alert className="border-holly/60 bg-holly/10">
-        <ShieldAlert className="text-holly-light" />
+      <Alert className="border-brand/60 bg-brand/10">
+        <ShieldAlert className="text-brand-light" />
         <AlertTitle className="text-base">This password can't be reset</AlertTitle>
         <AlertDescription>
           It's the only way into the admin page, and nobody can recover it. Write it down somewhere safe.
@@ -517,7 +517,7 @@ function OrganizerSection({ draft, errors, onChange, names }: Props & { names: s
           </Field>
         </div>
       )}
-      {errors.organizer && <p className="text-sm text-holly-light">{errors.organizer}</p>}
+      {errors.organizer && <p className="text-sm text-error">{errors.organizer}</p>}
     </Section>
   )
 }

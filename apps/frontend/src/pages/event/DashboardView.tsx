@@ -46,8 +46,8 @@ export function DashboardView({ slug, token, dashboard, onChange, onReplay, onLo
       />
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Widget icon={<Gift />} title="You're building for" className="border-holly/40">
-          <p className="text-4xl font-black text-holly-light">{recipient.name}</p>
+        <Widget icon={<Gift />} title="You're building for" className="border-brand/40">
+          <p className="text-4xl font-black text-brand-light">{recipient.name}</p>
           <Button variant="link" size="sm" className="h-auto self-start p-0 text-muted-foreground" onClick={onReplay}>
             <RotateCcw /> Replay the reveal
           </Button>
@@ -57,11 +57,11 @@ export function DashboardView({ slug, token, dashboard, onChange, onReplay, onLo
           <Widget icon={<Wand2 />} title="Your restriction" className="md:col-span-2">
             {chosen ? (
               <div className="flex flex-col gap-1">
-                <p className="text-2xl font-bold text-gold">{chosen.title}</p>
+                <p className="text-2xl font-bold text-highlight">{chosen.title}</p>
                 {chosen.description && <p className="text-muted-foreground">{chosen.description}</p>}
               </div>
             ) : (
-              <p className="text-sm text-holly-light">You haven't picked one yet.</p>
+              <p className="text-sm text-brand-light">You haven't picked one yet.</p>
             )}
             {dashboard.restriction_options.length > 1 && (
               <details className="group text-sm" open={!dashboard.chosen_restriction}>
@@ -120,7 +120,7 @@ function Widget({
   return (
     <Card className={cn('gap-3', className)}>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-xs font-medium tracking-widest text-muted-foreground uppercase [&_svg]:size-4 [&_svg]:text-gold">
+        <CardTitle className="flex items-center gap-2 text-xs font-medium tracking-widest text-muted-foreground uppercase [&_svg]:size-4 [&_svg]:text-highlight">
           {icon}
           {title}
         </CardTitle>
