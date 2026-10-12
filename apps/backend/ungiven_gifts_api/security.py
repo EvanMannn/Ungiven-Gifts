@@ -27,14 +27,6 @@ def verify_password(password: str, stored: str) -> bool:
     return hmac.compare_digest(digest.hex(), digest_hex)
 
 
-def new_admin_key() -> str:
-    return secrets.token_urlsafe(24)
-
-
-def hash_admin_key(key: str) -> str:
-    return hashlib.sha256(key.encode()).hexdigest()
-
-
 def new_slug() -> str:
     alphabet = "abcdefghjkmnpqrstuvwxyz23456789"  # no lookalikes, easy to read aloud
     return "".join(secrets.choice(alphabet) for _ in range(8))
@@ -49,20 +41,25 @@ def _sign(payload: str, secret: str) -> str:
     return base64.urlsafe_b64encode(sig).decode().rstrip("=")
 
 
-def issue_token(slug: str, participant_id: str, password_version: int, secret: str) -> str:
-    payload = f"{slug}.{participant_id}.{password_version}.{int(time.time())}"
+# Token subject for the organizer. Participant ids are hex, so this can never collide with one.
+ADMIN_SUBJECT = "admin"
+
+
+def issue_token(slug: str, subject: str, password_version: int, secret: str) -> str:
+    """`subject` is a participant id, or ADMIN_SUBJECT for the organizer."""
+    payload = f"{slug}.{subject}.{password_version}.{int(time.time())}"
     return f"{payload}.{_sign(payload, secret)}"
 
 
 def read_token(token: str, secret: str, max_age_seconds: int) -> tuple[str, str, int] | None:
-    """Return (slug, participant_id, password_version) for a valid token, else None."""
+    """Return (slug, subject, password_version) for a valid token, else None."""
     try:
         payload, signature = token.rsplit(".", 1)
-        slug, participant_id, version, issued = payload.split(".")
+        slug, subject, version, issued = payload.split(".")
         if not hmac.compare_digest(signature, _sign(payload, secret)):
             return None
         if time.time() - int(issued) > max_age_seconds:
             return None
-        return slug, participant_id, int(version)
+        return slug, subject, int(version)
     except ValueError:
         return None

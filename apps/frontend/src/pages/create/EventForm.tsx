@@ -1,8 +1,9 @@
-import { Download, FileUp, Lightbulb, Plus, X } from 'lucide-react'
+import { Download, FileUp, Lightbulb, Plus, ShieldAlert, X } from 'lucide-react'
 import { type ReactNode, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Field } from '@/components/Field'
 import { SimpleSelect } from '@/components/SimpleSelect'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -300,7 +301,38 @@ function ExclusionsSection({ draft, onChange, names }: Omit<Props, 'errors'> & {
 
 function OrganizerSection({ draft, errors, onChange, names }: Props & { names: string[] }) {
   return (
-    <Section title="Are you taking part?">
+    <Section
+      title="You, the organizer"
+      description="Your admin password lets you manage the event: edit details and reset forgotten passwords."
+    >
+      <Alert className="border-holly/60 bg-holly/10">
+        <ShieldAlert className="text-holly-light" />
+        <AlertTitle className="text-base">This password can't be reset</AlertTitle>
+        <AlertDescription>
+          It's the only way into the admin page, and nobody can recover it. Write it down somewhere safe.
+        </AlertDescription>
+      </Alert>
+      <div className="grid gap-5 sm:grid-cols-2">
+        <Field label="Admin password" htmlFor="admin-password">
+          <Input
+            id="admin-password"
+            type="password"
+            autoComplete="new-password"
+            value={draft.adminPassword}
+            onChange={(e) => onChange({ adminPassword: e.target.value })}
+          />
+        </Field>
+        <Field label="Admin password again" htmlFor="admin-password-confirm" error={errors.admin}>
+          <Input
+            id="admin-password-confirm"
+            type="password"
+            autoComplete="new-password"
+            value={draft.adminPasswordConfirm}
+            onChange={(e) => onChange({ adminPasswordConfirm: e.target.value })}
+          />
+        </Field>
+      </div>
+
       <Label className="flex cursor-pointer items-center gap-3 font-normal">
         <Switch checked={draft.organizerPlaying} onCheckedChange={(organizerPlaying) => onChange({ organizerPlaying })} />
         I'm one of the participants. Log me in once the event is created.
@@ -317,7 +349,11 @@ function OrganizerSection({ draft, errors, onChange, names }: Props & { names: s
               disabled={names.length === 0}
             />
           </Field>
-          <Field label="Your password" htmlFor="organizer-password" hint="Use it to log back in later.">
+          <Field
+            label="Your participant password"
+            htmlFor="organizer-password"
+            hint="A separate password for playing. Like everyone's, it can be reset from the admin page."
+          >
             <Input
               id="organizer-password"
               type="password"

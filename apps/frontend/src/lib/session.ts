@@ -1,8 +1,10 @@
 // Per-event credentials kept in localStorage, so someone in two events stays logged into both.
 
 interface StoredSession {
+  /** Participant login. */
   token?: string
-  adminKey?: string
+  /** Organizer login for the admin page. Kept separately, since an organizer can also play. */
+  adminToken?: string
 }
 
 const key = (slug: string) => `ungiven-gifts:${slug}`
@@ -25,7 +27,7 @@ function write(slug: string, session: StoredSession) {
 
 export const session = {
   token: (slug: string) => read(slug).token,
-  adminKey: (slug: string) => read(slug).adminKey,
+  adminToken: (slug: string) => read(slug).adminToken,
   setToken: (slug: string, token: string | undefined) => write(slug, { ...read(slug), token }),
-  setAdminKey: (slug: string, adminKey: string) => write(slug, { ...read(slug), adminKey }),
+  setAdminToken: (slug: string, adminToken: string | undefined) => write(slug, { ...read(slug), adminToken }),
 }

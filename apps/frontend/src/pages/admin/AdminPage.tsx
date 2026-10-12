@@ -1,6 +1,6 @@
 import { Check, Eye, KeyRound, Loader2, Minus } from 'lucide-react'
 import { type SubmitEvent, useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
+import { Link, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { ApiError, api } from '@/api/client'
 import type { AdminParticipant, AdminView } from '@/api/types'
@@ -20,40 +20,33 @@ import { eventUrl } from '@/lib/format'
 import { session } from '@/lib/session'
 import NotFoundPage from '../NotFoundPage'
 import { EventHeader } from '../event/EventHeader'
+import { AdminLoginForm } from './AdminLoginForm'
 
 type State =
   | { kind: 'loading' }
-  | { kind: 'no-key'; invalid: boolean }
+  | { kind: 'login' }
   | { kind: 'not-found' }
   | { kind: 'error'; message: string }
   | { kind: 'ready'; view: AdminView }
 
 export default function AdminPage() {
   const { slug = '' } = useParams()
-  const [params] = useSearchParams()
-  const navigate = useNavigate()
   const [state, setState] = useState<State>({ kind: 'loading' })
 
-  // An admin link carries ?key=...; remember it and tidy the URL so it isn't shared by accident.
-  const urlKey = params.get('key')
-  useEffect(() => {
-    if (urlKey) {
-      session.setAdminKey(slug, urlKey)
-      navigate(`/e/${slug}/admin`, { replace: true })
-    }
-  }, [urlKey, slug, navigate])
-
   const load = useCallback(async () => {
-    const adminKey = urlKey ?? session.adminKey(slug)
-    if (!adminKey) return setState({ kind: 'no-key', invalid: false })
+    const token = session.adminToken(slug)
+    if (!token) return setState({ kind: 'login' })
     try {
-      setState({ kind: 'ready', view: await api.adminView(slug, adminKey) })
+      setState({ kind: 'ready', view: await api.adminView(slug, token) })
     } catch (e) {
       if (e instanceof ApiError && e.status === 404) setState({ kind: 'not-found' })
-      else if (e instanceof ApiError && e.status === 403) setState({ kind: 'no-key', invalid: true })
-      else setState({ kind: 'error', message: e instanceof Error ? e.message : 'Could not load the event.' })
+      else if (e instanceof ApiError && e.status === 401) {
+        // Expired or not an admin token: forget it and ask for the password.
+        session.setAdminToken(slug, undefined)
+        setState({ kind: 'login' })
+      } else setState({ kind: 'error', message: e instanceof Error ? e.message : 'Could not load the event.' })
     }
-  }, [slug, urlKey])
+  }, [slug])
 
   useEffect(() => {
     load()
@@ -66,22 +59,31 @@ export default function AdminPage() {
       return <NotFoundPage message="That event doesn't exist." />
     case 'error':
       return <ErrorAlert message={state.message} />
-    case 'no-key':
+    case 'login':
       return (
-        <KeyPrompt
-          invalid={state.invalid}
-          onSubmit={(key) => {
-            session.setAdminKey(slug, key)
-            setState({ kind: 'loading' })
-            load()
-          }}
-        />
+        <Card className="mx-auto w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <KeyRound className="size-5 text-gold" /> Organizer login
+            </CardTitle>
+            <CardDescription>Enter the admin password you chose when you created the event.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AdminLoginForm
+              slug={slug}
+              onLoggedIn={() => {
+                setState({ kind: 'loading' })
+                load()
+              }}
+            />
+          </CardContent>
+        </Card>
       )
     case 'ready':
       return (
         <AdminDashboard
           slug={slug}
-          adminKey={session.adminKey(slug) ?? ''}
+          token={session.adminToken(slug) ?? ''}
           view={state.view}
           onChange={(view) => setState({ kind: 'ready', view })}
         />
@@ -89,43 +91,14 @@ export default function AdminPage() {
   }
 }
 
-function KeyPrompt({ invalid, onSubmit }: { invalid: boolean; onSubmit: (key: string) => void }) {
-  const [value, setValue] = useState('')
-  function submit(e: SubmitEvent<HTMLFormElement>) {
-    e.preventDefault()
-    // Accept either the bare key or the whole admin link.
-    const key = value.includes('key=') ? new URL(value, window.location.origin).searchParams.get('key') : value.trim()
-    if (key) onSubmit(key)
-  }
-  return (
-    <Card className="mx-auto max-w-md">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <KeyRound className="size-5 text-gold" /> Admin access
-        </CardTitle>
-        <CardDescription>Paste the admin link you got when you created the event.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={submit} className="flex flex-col gap-3">
-          {invalid && <ErrorAlert title="That admin key didn't work" message="Check you copied the whole link." />}
-          <Input aria-label="Admin link or key" value={value} onChange={(e) => setValue(e.target.value)} placeholder="https://…/admin?key=…" />
-          <Button type="submit" disabled={!value.trim()}>
-            Continue
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
-  )
-}
-
 function AdminDashboard({
   slug,
-  adminKey,
+  token,
   view,
   onChange,
 }: {
   slug: string
-  adminKey: string
+  token: string
   view: AdminView
   onChange: (v: AdminView) => void
 }) {
@@ -147,7 +120,7 @@ function AdminDashboard({
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Share with participants</CardTitle>
-          <CardDescription>Everyone uses this same link and picks their own name.</CardDescription>
+          <CardDescription>Everyone uses this same link and enters their own name.</CardDescription>
         </CardHeader>
         <CardContent>
           <CopyField label="Participant link" value={eventUrl(slug)} />
@@ -171,11 +144,11 @@ function AdminDashboard({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ParticipantsTable slug={slug} adminKey={adminKey} view={view} onChange={onChange} />
+          <ParticipantsTable slug={slug} token={token} view={view} onChange={onChange} />
         </CardContent>
       </Card>
 
-      <EditDetails slug={slug} adminKey={adminKey} view={view} onChange={onChange} />
+      <EditDetails slug={slug} token={token} view={view} onChange={onChange} />
     </div>
   )
 }
@@ -199,12 +172,12 @@ function Stat({ label, value, total }: { label: string; value: number; total: nu
 
 function ParticipantsTable({
   slug,
-  adminKey,
+  token,
   view,
   onChange,
 }: {
   slug: string
-  adminKey: string
+  token: string
   view: AdminView
   onChange: (v: AdminView) => void
 }) {
@@ -216,7 +189,7 @@ function ParticipantsTable({
     if (!window.confirm(`Reset ${p.name}'s password? Their next login sets a new one.`)) return
     setResetting(p.id)
     try {
-      onChange(await api.resetPassword(slug, adminKey, p.id))
+      onChange(await api.resetPassword(slug, token, p.id))
       toast.success(`${p.name} can now set a new password.`)
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Reset failed.')
@@ -288,12 +261,12 @@ function StatusCell({ done }: { done: boolean }) {
 
 function EditDetails({
   slug,
-  adminKey,
+  token,
   view,
   onChange,
 }: {
   slug: string
-  adminKey: string
+  token: string
   view: AdminView
   onChange: (v: AdminView) => void
 }) {
@@ -313,7 +286,7 @@ function EditDetails({
     setSaving(true)
     try {
       onChange(
-        await api.updateEvent(slug, adminKey, {
+        await api.updateEvent(slug, token, {
           name: form.name.trim(),
           format: form.format.trim(),
           budget: form.budget.trim() || null,

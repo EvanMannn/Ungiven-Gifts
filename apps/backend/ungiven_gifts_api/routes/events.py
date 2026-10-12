@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, status
 from ..deps import EventDep, Repo, SettingsDep
 from ..event_builder import EventValidationError, build_event, to_public
 from ..models import EventCreate, EventCreated, EventPublic
-from ..security import hash_password, issue_token, new_slug
+from ..security import ADMIN_SUBJECT, hash_password, issue_token, new_slug
 
 router = APIRouter(prefix="/events", tags=["events"])
 
@@ -17,11 +17,13 @@ async def create_event(payload: EventCreate, repo: Repo, settings: SettingsDep) 
         slug = new_slug()
 
     try:
-        event, admin_key = build_event(payload, slug, random.SystemRandom())
+        event = build_event(payload, slug, random.SystemRandom())
     except EventValidationError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
 
-    created = EventCreated(slug=slug, admin_key=admin_key)
+    created = EventCreated(
+        slug=slug, admin_token=issue_token(slug, ADMIN_SUBJECT, 0, settings.secret_key)
+    )
     if payload.organizer:
         organizer = next(
             (

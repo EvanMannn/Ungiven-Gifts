@@ -4,15 +4,15 @@ import random
 
 from . import pairing
 from .models import EventCreate, EventPublic, EventRecord, ParticipantRecord
-from .security import hash_admin_key, new_admin_key, new_participant_id
+from .security import hash_password, new_participant_id
 
 
 class EventValidationError(ValueError):
     pass
 
 
-def build_event(payload: EventCreate, slug: str, rng: random.Random) -> tuple[EventRecord, str]:
-    """Validate the payload, run the draw, and return (event, plaintext admin key)."""
+def build_event(payload: EventCreate, slug: str, rng: random.Random) -> EventRecord:
+    """Validate the payload, run the draw, and return the event ready to save."""
     names = [p.name for p in payload.participants]
     id_by_name = _unique_ids(names)
 
@@ -64,22 +64,20 @@ def build_event(payload: EventCreate, slug: str, rng: random.Random) -> tuple[Ev
         for pid, p in zip(ids, payload.participants, strict=True)
     ]
 
-    admin_key = new_admin_key()
-    event = EventRecord(
+    return EventRecord(
         slug=slug,
         name=payload.name,
         format=payload.format,
         description=payload.description,
         budget=payload.budget,
         exchange_date=payload.exchange_date,
-        admin_key_hash=hash_admin_key(admin_key),
+        admin_password_hash=hash_password(payload.admin_password),
         questions=payload.questions,
         restrictions=restrictions,
         group_size=payload.group_size,
         exclusions=payload.exclusions,
         participants=participants,
     )
-    return event, admin_key
 
 
 def _unique_ids(names: list[str]) -> dict[str, str]:

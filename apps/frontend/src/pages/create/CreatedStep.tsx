@@ -23,14 +23,14 @@ export function CreatedStep({ created, eventName }: { created: EventCreated; eve
           <CopyField label="Participant link" value={eventUrl(created.slug)} />
         </div>
         <div className="flex flex-col gap-2">
-          <h3 className="text-sm font-medium">Your admin link</h3>
-          <CopyField label="Admin link" value={adminUrl(created.slug, created.admin_key)} />
+          <h3 className="text-sm font-medium">Admin page</h3>
+          <CopyField label="Admin link" value={adminUrl(created.slug)} />
           <Alert className="border-gold/40">
             <ShieldAlert className="text-gold" />
-            <AlertTitle>Keep this one to yourself</AlertTitle>
+            <AlertTitle>Log in with your admin password</AlertTitle>
             <AlertDescription>
-              It lets you edit the event and reset forgotten passwords. This browser remembers it, but save it somewhere
-              too. It can't be recovered.
+              This browser is already logged in. Anywhere else, open this link or use the organizer login on the
+              participant page. Remember: the admin password can't be reset.
             </AlertDescription>
           </Alert>
         </div>
