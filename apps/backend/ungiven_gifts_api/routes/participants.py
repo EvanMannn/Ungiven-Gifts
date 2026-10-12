@@ -6,8 +6,10 @@ from ..models import (
     ChooseRestriction,
     Dashboard,
     EventRecord,
+    FindParticipant,
     LoginRequest,
     LoginResponse,
+    ParticipantMatch,
     ParticipantRecord,
     QuestionAnswer,
     RecipientView,
@@ -15,6 +17,25 @@ from ..models import (
 from ..security import hash_password, issue_token, verify_password
 
 router = APIRouter(prefix="/events/{slug}", tags=["participants"])
+
+
+@router.post("/participants/find")
+async def find_participant(body: FindParticipant, event: EventDep) -> ParticipantMatch:
+    """First login step: match a typed name to a participant. Case and outer spaces are ignored,
+    which is safe because names are unique regardless of case."""
+    wanted = body.name.casefold()
+    participant = next((p for p in event.participants if p.name.casefold() == wanted), None)
+    if participant is None:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            "Nobody by that name is in this event. "
+            "Enter your name exactly as you gave it to the organizer.",
+        )
+    return ParticipantMatch(
+        participant_id=participant.id,
+        name=participant.name,
+        claimed=participant.password_hash is not None,
+    )
 
 
 @router.post("/login")

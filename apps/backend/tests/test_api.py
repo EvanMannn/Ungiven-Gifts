@@ -7,9 +7,14 @@ def _create(client: TestClient, payload: dict) -> dict:
     return res.json()
 
 
+def _find(client: TestClient, slug: str, name: str) -> dict:
+    res = client.post(f"/api/events/{slug}/participants/find", json={"name": name})
+    assert res.status_code == 200, res.text
+    return res.json()
+
+
 def _login(client: TestClient, slug: str, name: str, password: str = "pw") -> str:
-    event = client.get(f"/api/events/{slug}").json()
-    pid = next(p["id"] for p in event["participants"] if p["name"] == name)
+    pid = _find(client, slug, name)["participant_id"]
     res = client.post(
         f"/api/events/{slug}/login", json={"participant_id": pid, "password": password}
     )
@@ -31,7 +36,7 @@ def test_full_participant_flow(client: TestClient, event_payload: dict) -> None:
     public = client.get(f"/api/events/{slug}").json()
     assert public["has_questionnaire"] and public["has_restrictions"]
     assert not public["groups_enabled"]
-    assert {p["name"] for p in public["participants"]} == {"Alice", "Bob", "Cara", "Dan"}
+    assert "participants" not in public
 
     recipients = set()
     for name in ("Alice", "Bob", "Cara", "Dan"):
@@ -58,16 +63,27 @@ def test_recipient_answers_follow_question_order(client: TestClient, event_paylo
 
 def test_first_login_sets_password(client: TestClient, event_payload: dict) -> None:
     slug = _create(client, event_payload)["slug"]
+    assert _find(client, slug, "Alice")["claimed"] is False
     _login(client, slug, "Alice", "secret")
-    event = client.get(f"/api/events/{slug}").json()
-    alice = next(p for p in event["participants"] if p["name"] == "Alice")
-    assert alice["claimed"]
+    alice = _find(client, slug, "Alice")
+    assert alice["claimed"] is True
 
     bad = client.post(
-        f"/api/events/{slug}/login", json={"participant_id": alice["id"], "password": "nope"}
+        f"/api/events/{slug}/login",
+        json={"participant_id": alice["participant_id"], "password": "nope"},
     )
     assert bad.status_code == 401
     _login(client, slug, "Alice", "secret")
+
+
+def test_find_participant_by_name(client: TestClient, event_payload: dict) -> None:
+    slug = _create(client, event_payload)["slug"]
+    match = _find(client, slug, "  aLiCe ")
+    assert match["name"] == "Alice"
+
+    missing = client.post(f"/api/events/{slug}/participants/find", json={"name": "Alicia"})
+    assert missing.status_code == 404
+    assert "exactly" in missing.json()["detail"]
 
 
 def test_choose_restriction_and_onboard(client: TestClient, event_payload: dict) -> None:
