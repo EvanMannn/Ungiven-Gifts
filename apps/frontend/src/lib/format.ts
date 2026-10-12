@@ -11,6 +11,17 @@ export function formatDate(isoDate: string, style: 'long' | 'short' = 'long'): s
   })
 }
 
+/**
+ * Whole days from `today` until a "YYYY-MM-DD" date: 0 is today, negative means it has passed.
+ * Both are taken at local midnight, and rounding absorbs the odd 23- or 25-hour daylight-saving day.
+ */
+export function daysUntil(isoDate: string, today: Date): number {
+  const [y, m, d] = isoDate.split('-').map(Number)
+  const target = new Date(y, m - 1, d)
+  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  return Math.round((target.getTime() - start.getTime()) / 86_400_000)
+}
+
 /** Highest budget the form accepts, in dollars. */
 export const MAX_BUDGET = 10_000
 

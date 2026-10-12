@@ -91,6 +91,13 @@
   html {
     color-scheme: dark;
   }
+  /* Tailwind v4 stopped giving buttons a pointer cursor; bring it back for everything clickable.
+     Disabled ones keep the default arrow. */
+  button:not(:disabled),
+  [role='button']:not(:disabled),
+  [role='option']:not([data-disabled]) {
+    cursor: pointer;
+  }
   body {
     @apply min-h-dvh bg-background text-foreground antialiased;
     background-image:

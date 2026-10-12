@@ -153,9 +153,14 @@ describe('EventPage', () => {
     expect(api.getEvent).not.toHaveBeenCalled()
   })
 
-  it('stacks the restriction under the giftee, with the other widgets in a second column', async () => {
+  it('puts your build on the left, event info on the right, and the answers full width below', async () => {
     session.setToken('abc', 'tok')
-    vi.mocked(api.dashboard).mockResolvedValue({ ...dashboard, chosen_restriction: 'Mono-colored', onboarded: true })
+    vi.mocked(api.dashboard).mockResolvedValue({
+      ...dashboard,
+      event: { ...event, description: 'Swap at the shop.' },
+      chosen_restriction: 'Mono-colored',
+      onboarded: true,
+    })
     renderPage()
 
     // Each widget's title sits in its card; the card's parent is the column it's in.
@@ -163,8 +168,30 @@ describe('EventPage', () => {
     expect(await screen.findByText('Your restriction')).toBeInTheDocument()
     const left = column("You're building for")
     expect(column('Your restriction')).toBe(left)
-    expect(column('About Bob')).not.toBe(left)
-    expect(column('Safe to talk to')).toBe(column('About Bob'))
+
+    const right = column('Gift exchange')
+    expect(right).not.toBe(left)
+    expect(column('From the organizer')).toBe(right)
+    expect(column('Safe to talk to')).toBe(right)
+
+    // The answers sit beside the two-column grid, not inside either column.
+    const grid = left?.parentElement
+    expect(column('About Bob')).toBe(grid?.parentElement)
+  })
+
+  it('leaves out the event-info column when there is nothing to put in it', async () => {
+    session.setToken('abc', 'tok')
+    vi.mocked(api.dashboard).mockResolvedValue({
+      ...dashboard,
+      event: { ...event, exchange_date: null, description: '' },
+      group_mates: null,
+      onboarded: true,
+    })
+    renderPage()
+
+    expect(await screen.findByText("You're building for")).toBeInTheDocument()
+    expect(screen.queryByText('Gift exchange')).not.toBeInTheDocument()
+    expect(screen.queryByText('From the organizer')).not.toBeInTheDocument()
   })
 
   it('falls back to login when the saved session has expired', async () => {

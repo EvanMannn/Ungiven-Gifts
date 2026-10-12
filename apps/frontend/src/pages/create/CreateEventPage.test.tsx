@@ -135,6 +135,31 @@ describe('CreateEventPage', () => {
     expect(api.createEvent).toHaveBeenCalledWith(expect.objectContaining({ group_size: 2 }))
   })
 
+  it('choosing "Yes" to groups always picks a size, so the event really gets groups', async () => {
+    const user = userEvent.setup()
+    vi.mocked(api.createEvent).mockResolvedValue({
+      slug: 'abc23456',
+      admin_token: 'admin-tok',
+      organizer_participant_id: null,
+      organizer_token: null,
+    })
+    renderPage()
+
+    await user.type(screen.getByLabelText('Event name'), 'X')
+    await user.type(screen.getByLabelText(/^Names/), 'A\nB\nC\nD\nE\nF')
+    await enterAdminPassword(user)
+    await user.click(screen.getByRole('button', { name: /continue/i }))
+
+    // Say yes, but don't touch the sizes: the smallest (2) is already chosen.
+    await user.click(screen.getByRole('radio', { name: /yes, split/i }))
+    expect(screen.getByRole('radio', { name: /2 per group/i })).toBeChecked()
+    await user.click(screen.getByRole('button', { name: /review/i }))
+
+    expect(screen.getByText('3 groups of 2, assigned randomly')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /create event/i }))
+    expect(api.createEvent).toHaveBeenCalledWith(expect.objectContaining({ group_size: 2 }))
+  })
+
   it('lists restrictions as collapsed rows, opening one description at a time', async () => {
     const user = userEvent.setup()
     renderPage()

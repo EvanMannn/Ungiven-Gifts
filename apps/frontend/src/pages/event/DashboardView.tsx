@@ -1,10 +1,11 @@
-import { Gift, LogOut, MessagesSquare, RotateCcw, ScrollText, Settings, Wand2 } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { CalendarClock, Gift, LogOut, Megaphone, MessagesSquare, RotateCcw, ScrollText, Settings, Wand2 } from 'lucide-react'
+import { type ReactNode, useState } from 'react'
 import { Link } from 'react-router'
 import type { Dashboard } from '@/api/types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { daysUntil, formatDate } from '@/lib/format'
 import { session } from '@/lib/session'
 import { cn } from '@/lib/utils'
 import { EventHeader } from './EventHeader'
@@ -24,8 +25,8 @@ export function DashboardView({ slug, token, dashboard, onChange, onReplay, onLo
   const { event, recipient } = dashboard
   const isAdmin = Boolean(session.adminToken(slug))
   const chosen = dashboard.restriction_options.find((r) => r.title === dashboard.chosen_restriction)
-  // The right-hand column only exists when there's something to put in it.
-  const hasSideColumn = event.has_questionnaire || dashboard.group_mates !== null
+  // The right-hand column holds event info, and only exists when there's some to show.
+  const hasSideColumn = Boolean(event.exchange_date || event.description) || dashboard.group_mates !== null
 
   return (
     <div className="flex flex-col gap-6">
@@ -47,8 +48,9 @@ export function DashboardView({ slug, token, dashboard, onChange, onReplay, onLo
         }
       />
 
-      {/* Two equal columns that stack independently, so a long restriction list only makes the
-          left one taller. Without anything for the right column, the left takes the full width. */}
+      {/* Two equal columns that stack independently: your build on the left, event info on the
+          right. A long restriction list only makes its own column taller. Without any event info,
+          the left column takes the full width. */}
       <div className={cn('grid items-start gap-4', hasSideColumn && 'md:grid-cols-2')}>
         <div className="flex flex-col gap-4">
           <Widget icon={<Gift />} title="You're building for" className="border-brand/40">
@@ -84,9 +86,11 @@ export function DashboardView({ slug, token, dashboard, onChange, onReplay, onLo
 
         {hasSideColumn && (
           <div className="flex flex-col gap-4">
-            {event.has_questionnaire && (
-              <Widget icon={<ScrollText />} title={`About ${recipient.name}`}>
-                <RecipientAnswers name={recipient.name} answers={recipient.answers} />
+            {event.exchange_date && <Countdown date={event.exchange_date} />}
+
+            {event.description && (
+              <Widget icon={<Megaphone />} title="From the organizer">
+                <p className="text-sm whitespace-pre-line">{event.description}</p>
               </Widget>
             )}
 
@@ -107,12 +111,33 @@ export function DashboardView({ slug, token, dashboard, onChange, onReplay, onLo
         )}
       </div>
 
-      {event.description && (
-        <Widget icon={<ScrollText />} title="From the organizer">
-          <p className="text-sm whitespace-pre-line">{event.description}</p>
+      {/* Full width below both columns: answers can run long and read better on wide lines. */}
+      {event.has_questionnaire && (
+        <Widget icon={<ScrollText />} title={`About ${recipient.name}`}>
+          <RecipientAnswers name={recipient.name} answers={recipient.answers} />
         </Widget>
       )}
     </div>
+  )
+}
+
+/** Days until the gift exchange, counting down to "today", then saying when it was. */
+function Countdown({ date }: { date: string }) {
+  // Read the clock once when the widget appears, not on every render.
+  const [today] = useState(() => new Date())
+  const days = daysUntil(date, today)
+
+  let headline: string
+  if (days > 1) headline = `${days} days to go`
+  else if (days === 1) headline = 'Tomorrow!'
+  else if (days === 0) headline = "It's today!"
+  else headline = 'The swap has happened'
+
+  return (
+    <Widget icon={<CalendarClock />} title="Gift exchange">
+      <p className="text-3xl font-black text-highlight">{headline}</p>
+      <p className="text-sm text-muted-foreground">{formatDate(date)}</p>
+    </Widget>
   )
 }
 

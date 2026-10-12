@@ -1,5 +1,5 @@
 import { Info } from 'lucide-react'
-import { type ReactNode, useState } from 'react'
+import type { ReactNode } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
@@ -14,8 +14,9 @@ interface Props {
 /** Asks whether to split the event into build groups, offering only sizes that divide evenly. */
 export function GroupsStep({ participantCount, groupSize, onChange }: Props) {
   const sizes = validGroupSizes(participantCount)
-  // "Yes" can be picked before a size is, so it needs its own state on top of groupSize.
-  const [wantsGroups, setWantsGroups] = useState(groupSize !== null)
+  // Groups are on exactly when a size is chosen. "Yes" picks the smallest size straight away, so
+  // there's no "yes, but no size yet" state that would quietly create the event without groups.
+  const wantsGroups = groupSize !== null
 
   return (
     <Card>
@@ -44,16 +45,10 @@ export function GroupsStep({ participantCount, groupSize, onChange }: Props) {
         ) : (
           <>
             <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Use build groups">
-              <Choice
-                selected={!wantsGroups}
-                onClick={() => {
-                  setWantsGroups(false)
-                  onChange(null)
-                }}
-              >
+              <Choice selected={!wantsGroups} onClick={() => onChange(null)}>
                 No groups
               </Choice>
-              <Choice selected={wantsGroups} onClick={() => setWantsGroups(true)}>
+              <Choice selected={wantsGroups} onClick={() => !wantsGroups && onChange(sizes[0])}>
                 Yes, split into groups
               </Choice>
             </div>
