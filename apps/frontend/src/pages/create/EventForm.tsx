@@ -2,6 +2,7 @@ import { ChevronRight, Download, FileUp, Lightbulb, Plus, ShieldAlert, X } from 
 import { type ReactNode, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { BudgetInput } from '@/components/BudgetInput'
+import { DatePicker } from '@/components/DatePicker'
 import { Field } from '@/components/Field'
 import { SimpleSelect } from '@/components/SimpleSelect'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -108,7 +109,7 @@ function DetailsSection({ draft, errors, onChange }: Props) {
           <BudgetInput id="budget" value={draft.budget} onChange={(budget) => onChange({ budget })} />
         </Field>
         <Field label="Gift exchange date" htmlFor="date" hint="Optional">
-          <Input id="date" type="date" value={draft.exchangeDate} onChange={(e) => onChange({ exchangeDate: e.target.value })} />
+          <DatePicker id="date" value={draft.exchangeDate} onChange={(exchangeDate) => onChange({ exchangeDate })} />
         </Field>
       </div>
       <Field label="Notes for participants" htmlFor="description" hint="Optional. House rules, where the swap happens, and so on.">

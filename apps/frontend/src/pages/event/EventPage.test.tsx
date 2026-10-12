@@ -153,6 +153,20 @@ describe('EventPage', () => {
     expect(api.getEvent).not.toHaveBeenCalled()
   })
 
+  it('stacks the restriction under the giftee, with the other widgets in a second column', async () => {
+    session.setToken('abc', 'tok')
+    vi.mocked(api.dashboard).mockResolvedValue({ ...dashboard, chosen_restriction: 'Mono-colored', onboarded: true })
+    renderPage()
+
+    // Each widget's title sits in its card; the card's parent is the column it's in.
+    const column = (title: string) => screen.getByText(title).closest('[data-slot="card"]')?.parentElement
+    expect(await screen.findByText('Your restriction')).toBeInTheDocument()
+    const left = column("You're building for")
+    expect(column('Your restriction')).toBe(left)
+    expect(column('About Bob')).not.toBe(left)
+    expect(column('Safe to talk to')).toBe(column('About Bob'))
+  })
+
   it('falls back to login when the saved session has expired', async () => {
     session.setToken('abc', 'stale')
     vi.mocked(api.dashboard).mockRejectedValue(new ApiError(401, 'Please log in again.'))

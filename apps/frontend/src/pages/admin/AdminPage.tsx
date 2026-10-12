@@ -6,6 +6,7 @@ import { ApiError, api } from '@/api/client'
 import type { AdminParticipant, AdminView } from '@/api/types'
 import { BudgetInput } from '@/components/BudgetInput'
 import { CopyField } from '@/components/CopyField'
+import { DatePicker } from '@/components/DatePicker'
 import { ErrorAlert } from '@/components/ErrorAlert'
 import { Field } from '@/components/Field'
 import { Loading } from '@/components/Loading'
@@ -322,7 +323,7 @@ function EditDetails({
               <BudgetInput id="edit-budget" value={form.budget} onChange={(budget) => set({ budget })} />
             </Field>
             <Field label="Gift exchange date" htmlFor="edit-date">
-              <Input id="edit-date" type="date" value={form.exchange_date} onChange={(e) => set({ exchange_date: e.target.value })} />
+              <DatePicker id="edit-date" value={form.exchange_date} onChange={(exchange_date) => set({ exchange_date })} />
             </Field>
           </div>
           <Field label="Notes for participants" htmlFor="edit-description">

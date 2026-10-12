@@ -24,6 +24,8 @@ export function DashboardView({ slug, token, dashboard, onChange, onReplay, onLo
   const { event, recipient } = dashboard
   const isAdmin = Boolean(session.adminToken(slug))
   const chosen = dashboard.restriction_options.find((r) => r.title === dashboard.chosen_restriction)
+  // The right-hand column only exists when there's something to put in it.
+  const hasSideColumn = event.has_questionnaire || dashboard.group_mates !== null
 
   return (
     <div className="flex flex-col gap-6">
@@ -45,63 +47,71 @@ export function DashboardView({ slug, token, dashboard, onChange, onReplay, onLo
         }
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Widget icon={<Gift />} title="You're building for" className="border-brand/40">
-          <p className="text-4xl font-black text-brand-light">{recipient.name}</p>
-          <Button variant="link" size="sm" className="h-auto self-start p-0 text-muted-foreground" onClick={onReplay}>
-            <RotateCcw /> Replay the reveal
-          </Button>
-        </Widget>
+      {/* Two equal columns that stack independently, so a long restriction list only makes the
+          left one taller. Without anything for the right column, the left takes the full width. */}
+      <div className={cn('grid items-start gap-4', hasSideColumn && 'md:grid-cols-2')}>
+        <div className="flex flex-col gap-4">
+          <Widget icon={<Gift />} title="You're building for" className="border-brand/40">
+            <p className="text-4xl font-black text-brand-light">{recipient.name}</p>
+            <Button variant="link" size="sm" className="h-auto self-start p-0 text-muted-foreground" onClick={onReplay}>
+              <RotateCcw /> Replay the reveal
+            </Button>
+          </Widget>
 
-        {dashboard.restriction_options.length > 0 && (
-          <Widget icon={<Wand2 />} title="Your restriction" className="md:col-span-2">
-            {chosen ? (
-              <div className="flex flex-col gap-1">
-                <p className="text-2xl font-bold text-highlight">{chosen.title}</p>
-                {chosen.description && <p className="text-muted-foreground">{chosen.description}</p>}
-              </div>
-            ) : (
-              <p className="text-sm text-brand-light">You haven't picked one yet.</p>
-            )}
-            {dashboard.restriction_options.length > 1 && (
-              <details className="group text-sm" open={!dashboard.chosen_restriction}>
-                <summary className="cursor-pointer text-muted-foreground select-none hover:text-foreground">
-                  {dashboard.chosen_restriction ? 'Change it' : 'Your options'}
-                </summary>
-                <div className="pt-3">
-                  <RestrictionPicker slug={slug} token={token} dashboard={dashboard} onChange={onChange} />
+          {dashboard.restriction_options.length > 0 && (
+            <Widget icon={<Wand2 />} title="Your restriction">
+              {chosen ? (
+                <div className="flex flex-col gap-1">
+                  <p className="text-2xl font-bold text-highlight">{chosen.title}</p>
+                  {chosen.description && <p className="text-muted-foreground">{chosen.description}</p>}
                 </div>
-              </details>
+              ) : (
+                <p className="text-sm text-brand-light">You haven't picked one yet.</p>
+              )}
+              {dashboard.restriction_options.length > 1 && (
+                <details className="group text-sm" open={!dashboard.chosen_restriction}>
+                  <summary className="cursor-pointer text-muted-foreground select-none hover:text-foreground">
+                    {dashboard.chosen_restriction ? 'Change it' : 'Your options'}
+                  </summary>
+                  <div className="pt-3">
+                    <RestrictionPicker slug={slug} token={token} dashboard={dashboard} onChange={onChange} />
+                  </div>
+                </details>
+              )}
+            </Widget>
+          )}
+        </div>
+
+        {hasSideColumn && (
+          <div className="flex flex-col gap-4">
+            {event.has_questionnaire && (
+              <Widget icon={<ScrollText />} title={`About ${recipient.name}`}>
+                <RecipientAnswers name={recipient.name} answers={recipient.answers} />
+              </Widget>
             )}
-          </Widget>
-        )}
 
-        {event.has_questionnaire && (
-          <Widget icon={<ScrollText />} title={`About ${recipient.name}`} className="md:col-span-2">
-            <RecipientAnswers name={recipient.name} answers={recipient.answers} />
-          </Widget>
-        )}
-
-        {dashboard.group_mates !== null && (
-          <Widget icon={<MessagesSquare />} title="Safe to talk to">
-            <p className="text-xs text-muted-foreground">Your build group. Nobody here is building for anyone else here.</p>
-            <div className="flex flex-wrap gap-2">
-              {dashboard.group_mates.map((n) => (
-                <Badge key={n} variant="secondary" className="px-3 py-1 text-sm">
-                  {n}
-                </Badge>
-              ))}
-              {dashboard.group_mates.length === 0 && <p className="text-sm text-muted-foreground">Just you this time.</p>}
-            </div>
-          </Widget>
-        )}
-
-        {event.description && (
-          <Widget icon={<ScrollText />} title="From the organizer" className="md:col-span-3">
-            <p className="text-sm whitespace-pre-line">{event.description}</p>
-          </Widget>
+            {dashboard.group_mates !== null && (
+              <Widget icon={<MessagesSquare />} title="Safe to talk to">
+                <p className="text-xs text-muted-foreground">Your build group. Nobody here is building for anyone else here.</p>
+                <div className="flex flex-wrap gap-2">
+                  {dashboard.group_mates.map((n) => (
+                    <Badge key={n} variant="secondary" className="px-3 py-1 text-sm">
+                      {n}
+                    </Badge>
+                  ))}
+                  {dashboard.group_mates.length === 0 && <p className="text-sm text-muted-foreground">Just you this time.</p>}
+                </div>
+              </Widget>
+            )}
+          </div>
         )}
       </div>
+
+      {event.description && (
+        <Widget icon={<ScrollText />} title="From the organizer">
+          <p className="text-sm whitespace-pre-line">{event.description}</p>
+        </Widget>
+      )}
     </div>
   )
 }
