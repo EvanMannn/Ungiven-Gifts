@@ -16,6 +16,8 @@ QuestionText = Annotated[
     str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1000)
 ]
 LongText = Annotated[str, StringConstraints(strip_whitespace=True, max_length=2000)]
+# Not stripped: spaces are part of a password.
+Password = Annotated[str, StringConstraints(min_length=1, max_length=200)]
 
 
 # ---------------------------------------------------------------------------
@@ -33,7 +35,7 @@ class OrganizerIn(BaseModel):
     """Set when the organizer is also a participant, so they're logged in on creation."""
 
     name: Name
-    password: Annotated[str, StringConstraints(min_length=1, max_length=200)]
+    password: Password
 
 
 class EventCreate(BaseModel):
@@ -56,12 +58,16 @@ class EventCreate(BaseModel):
     # gift each other, so they can talk about their decks freely.
     group_size: int | None = Field(default=None, ge=2)
 
+    # The organizer's password for the admin page. Separate from any participant password, and it
+    # can't be reset, since only the organizer can reset passwords.
+    admin_password: Password
     organizer: OrganizerIn | None = None
 
 
 class EventCreated(BaseModel):
     slug: str
-    admin_key: str
+    # Logs the creator in as admin straight away.
+    admin_token: str
     organizer_participant_id: str | None = None
     organizer_token: str | None = None
 
@@ -96,7 +102,8 @@ class EventRecord(BaseModel):
     exchange_date: date | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
-    admin_key_hash: str
+    # None only for events created before admin passwords existed; nobody can log in as their admin.
+    admin_password_hash: str | None = None
     questions: list[str] = Field(default_factory=list)
     restrictions: list[str] = Field(default_factory=list)
     group_size: int | None = None
@@ -139,7 +146,15 @@ class ParticipantMatch(BaseModel):
 
 class LoginRequest(BaseModel):
     participant_id: str
-    password: Annotated[str, StringConstraints(min_length=1, max_length=200)]
+    password: Password
+
+
+class AdminLoginRequest(BaseModel):
+    password: Password
+
+
+class AdminLoginResponse(BaseModel):
+    token: str
 
 
 class LoginResponse(BaseModel):

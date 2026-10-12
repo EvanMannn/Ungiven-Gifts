@@ -1,5 +1,6 @@
 import { ArrowRight, Loader2 } from 'lucide-react'
 import { type SubmitEvent, useState } from 'react'
+import { useNavigate } from 'react-router'
 import { api } from '@/api/client'
 import type { EventPublic, ParticipantMatch } from '@/api/types'
 import { ErrorAlert } from '@/components/ErrorAlert'
@@ -7,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { AdminLoginForm } from '../admin/AdminLoginForm'
 import { EventHeader } from './EventHeader'
 
 /**
@@ -20,6 +22,7 @@ export function LoginCard({ event, onLoggedIn }: { event: EventPublic; onLoggedI
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const navigate = useNavigate()
 
   async function findMe(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -127,6 +130,16 @@ export function LoginCard({ event, onLoggedIn }: { event: EventPublic; onLoggedI
               </Button>
             </form>
           )}
+        </CardContent>
+      </Card>
+
+      <Card className="gap-4 border-dashed">
+        <CardHeader>
+          <CardTitle className="text-base">Organizer?</CardTitle>
+          <CardDescription>Log in with your admin password to manage this event.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AdminLoginForm slug={event.slug} onLoggedIn={() => navigate(`/e/${event.slug}/admin`)} />
         </CardContent>
       </Card>
     </div>

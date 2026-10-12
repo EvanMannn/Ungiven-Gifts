@@ -3,6 +3,7 @@ import { importQuestionnaire } from '@/lib/csv'
 import {
   type EventDraft,
   activeExclusions,
+  adminPasswordEntered,
   applyImport,
   emptyDraft,
   participantNames,
@@ -15,6 +16,8 @@ const draft = (overrides: Partial<EventDraft> = {}): EventDraft => ({
   ...emptyDraft(),
   name: 'Playgroup',
   namesText: 'Alice\nBob\n\n  Cara  \nDan',
+  adminPassword: 'admin-pw',
+  adminPasswordConfirm: 'admin-pw',
   ...overrides,
 })
 
@@ -37,6 +40,13 @@ describe('validate', () => {
 
   it('reports duplicate names', () => {
     expect(validate(draft({ namesText: 'Alice\nalice\nBob' })).participants).toMatch(/alice/)
+  })
+
+  it('needs a matching admin password', () => {
+    expect(validate(draft({ adminPassword: '', adminPasswordConfirm: '' })).admin).toMatch(/admin password/)
+    expect(validate(draft({ adminPasswordConfirm: 'typo' })).admin).toMatch(/match/)
+    expect(adminPasswordEntered(draft({ adminPasswordConfirm: '' }))).toBe(false)
+    expect(adminPasswordEntered(draft())).toBe(true)
   })
 
   it('needs the organizer to be a participant with a password', () => {
@@ -67,6 +77,7 @@ describe('toPayload', () => {
       exchange_date: null,
       restrictions: ['Mono-colored', 'No tutors'],
       exclusions: [['Alice', 'Bob']],
+      admin_password: 'admin-pw',
       organizer: { name: 'Alice', password: 'pw' },
     })
     expect(payload.participants.map((p) => p.name)).toEqual(['Alice', 'Bob', 'Cara', 'Dan'])

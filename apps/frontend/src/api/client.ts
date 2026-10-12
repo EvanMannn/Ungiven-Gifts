@@ -1,4 +1,5 @@
 import type {
+  AdminLoginResponse,
   AdminView,
   Dashboard,
   EventCreate,
@@ -32,15 +33,14 @@ function path(strings: TemplateStringsArray, ...values: string[]): string {
 interface RequestOptions {
   method?: string
   body?: unknown
+  /** A participant or admin token. The server tells them apart. */
   token?: string
-  adminKey?: string
 }
 
-async function request<T>(url: string, { method = 'GET', body, token, adminKey }: RequestOptions = {}): Promise<T> {
+async function request<T>(url: string, { method = 'GET', body, token }: RequestOptions = {}): Promise<T> {
   const headers: Record<string, string> = {}
   if (body !== undefined) headers['Content-Type'] = 'application/json'
   if (token) headers.Authorization = `Bearer ${token}`
-  if (adminKey) headers['X-Admin-Key'] = adminKey
 
   let res: Response
   try {
@@ -92,12 +92,14 @@ export const api = {
   finishOnboarding: (slug: string, token: string) =>
     request<Dashboard>(path`/events/${slug}/me/onboarded`, { method: 'POST', token }),
 
-  adminView: (slug: string, adminKey: string) => request<AdminView>(path`/events/${slug}/admin`, { adminKey }),
-  updateEvent: (slug: string, adminKey: string, body: EventUpdate) =>
-    request<AdminView>(path`/events/${slug}/admin`, { method: 'PATCH', adminKey, body }),
-  resetPassword: (slug: string, adminKey: string, participantId: string) =>
+  adminLogin: (slug: string, password: string) =>
+    request<AdminLoginResponse>(path`/events/${slug}/admin/login`, { method: 'POST', body: { password } }),
+  adminView: (slug: string, token: string) => request<AdminView>(path`/events/${slug}/admin`, { token }),
+  updateEvent: (slug: string, token: string, body: EventUpdate) =>
+    request<AdminView>(path`/events/${slug}/admin`, { method: 'PATCH', token, body }),
+  resetPassword: (slug: string, token: string, participantId: string) =>
     request<AdminView>(path`/events/${slug}/admin/participants/${participantId}/reset-password`, {
       method: 'POST',
-      adminKey,
+      token,
     }),
 }

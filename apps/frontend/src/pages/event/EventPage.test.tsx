@@ -11,6 +11,7 @@ vi.mock('@/api/client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/api/client')>()),
   api: {
     getEvent: vi.fn(),
+    adminLogin: vi.fn(),
     findParticipant: vi.fn(),
     login: vi.fn(),
     dashboard: vi.fn(),
@@ -47,6 +48,7 @@ function renderPage() {
     <MemoryRouter initialEntries={['/e/abc']}>
       <Routes>
         <Route path="/e/:slug" element={<EventPage />} />
+        <Route path="/e/:slug/admin" element={<p>Admin page</p>} />
       </Routes>
     </MemoryRouter>,
   )
@@ -111,7 +113,7 @@ describe('EventPage', () => {
     await user.type(await screen.findByLabelText('Your name'), 'Alicia')
     await user.click(screen.getByRole('button', { name: 'Continue' }))
     expect(await screen.findByText('Nobody by that name is in this event.')).toBeInTheDocument()
-    expect(screen.queryByLabelText(/password/i)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Choose a password')).not.toBeInTheDocument()
   })
 
   it('asks a returning participant for their password, and lets them go back', async () => {
@@ -126,6 +128,18 @@ describe('EventPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Not Bob?' }))
     expect(screen.getByLabelText('Your name')).toHaveValue('Bob')
+  })
+
+  it('lets the organizer log in from the login page and sends them to the admin page', async () => {
+    vi.mocked(api.adminLogin).mockReset().mockResolvedValue({ token: 'admin-tok' })
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.type(await screen.findByLabelText('Admin password'), 'admin-pw')
+    await user.click(screen.getByRole('button', { name: 'Log in as organizer' }))
+    expect(api.adminLogin).toHaveBeenCalledWith('abc', 'admin-pw')
+    expect(await screen.findByText('Admin page')).toBeInTheDocument()
+    expect(session.adminToken('abc')).toBe('admin-tok')
   })
 
   it('goes straight to the dashboard for a returning participant', async () => {

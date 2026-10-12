@@ -22,6 +22,12 @@ def _login(client: TestClient, slug: str, name: str, password: str = "pw") -> st
     return res.json()["token"]
 
 
+def _admin_login(client: TestClient, slug: str, password: str = "admin-pw") -> str:
+    res = client.post(f"/api/events/{slug}/admin/login", json={"password": password})
+    assert res.status_code == 200, res.text
+    return res.json()["token"]
+
+
 def _auth(token: str) -> dict:
     return {"Authorization": f"Bearer {token}"}
 
@@ -190,15 +196,48 @@ def test_organizer_must_be_participant(client: TestClient, event_payload: dict) 
     assert client.post("/api/events", json=event_payload).status_code == 422
 
 
-def test_admin_edit_and_password_reset(client: TestClient, event_payload: dict) -> None:
-    created = _create(client, event_payload)
-    slug, key = created["slug"], created["admin_key"]
-    admin = {"X-Admin-Key": key}
+def test_admin_password_is_required(client: TestClient, event_payload: dict) -> None:
+    del event_payload["admin_password"]
+    assert client.post("/api/events", json=event_payload).status_code == 422
 
-    assert client.get(f"/api/events/{slug}/admin").status_code == 403
-    assert (
-        client.get(f"/api/events/{slug}/admin", headers={"X-Admin-Key": "wrong"}).status_code == 403
-    )
+
+def test_creator_gets_an_admin_token(client: TestClient, event_payload: dict) -> None:
+    created = _create(client, event_payload)
+    res = client.get(f"/api/events/{created['slug']}/admin", headers=_auth(created["admin_token"]))
+    assert res.status_code == 200
+
+
+def test_admin_login(client: TestClient, event_payload: dict) -> None:
+    slug = _create(client, event_payload)["slug"]
+    wrong = client.post(f"/api/events/{slug}/admin/login", json={"password": "nope"})
+    assert wrong.status_code == 401
+
+    token = _admin_login(client, slug)
+    assert client.get(f"/api/events/{slug}/admin", headers=_auth(token)).status_code == 200
+    assert client.get(f"/api/events/{slug}/admin").status_code == 401
+
+
+def test_admin_and_participant_tokens_stay_separate(
+    client: TestClient, event_payload: dict
+) -> None:
+    slug = _create(client, event_payload)["slug"]
+    participant = _auth(_login(client, slug, "Alice"))
+    admin = _auth(_admin_login(client, slug))
+
+    assert client.get(f"/api/events/{slug}/admin", headers=participant).status_code == 401
+    assert client.get(f"/api/events/{slug}/me", headers=admin).status_code == 401
+
+
+def test_admin_token_is_scoped_to_its_event(client: TestClient, event_payload: dict) -> None:
+    first = _create(client, event_payload)
+    second = _create(client, event_payload)["slug"]
+    res = client.get(f"/api/events/{second}/admin", headers=_auth(first["admin_token"]))
+    assert res.status_code == 401
+
+
+def test_admin_edit_and_password_reset(client: TestClient, event_payload: dict) -> None:
+    slug = _create(client, event_payload)["slug"]
+    admin = _auth(_admin_login(client, slug))
 
     updated = client.patch(
         f"/api/events/{slug}/admin", headers=admin, json={"name": "Renamed", "budget": None}

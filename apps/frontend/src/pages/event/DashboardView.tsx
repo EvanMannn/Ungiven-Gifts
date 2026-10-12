@@ -22,7 +22,7 @@ interface Props {
 
 export function DashboardView({ slug, token, dashboard, onChange, onReplay, onLogout }: Props) {
   const { event, recipient } = dashboard
-  const isAdmin = Boolean(session.adminKey(slug))
+  const isAdmin = Boolean(session.adminToken(slug))
 
   return (
     <div className="flex flex-col gap-6">

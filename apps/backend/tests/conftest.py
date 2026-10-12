@@ -19,6 +19,7 @@ def event_payload() -> dict:
         "name": "Playgroup Secret Santa 2026",
         "format": "Commander",
         "budget": "$40",
+        "admin_password": "admin-pw",
         "questions": ["Favorite colors?", "Pet cards?"],
         "restrictions": ["Mono-colored", "No mythics", "Tribal", "Under $25"],
         "participants": [

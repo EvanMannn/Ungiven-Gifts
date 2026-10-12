@@ -25,6 +25,10 @@ export interface EventDraft {
   /** People per build group, or null for no groups. Chosen in its own step after the form. */
   groupSize: number | null
 
+  /** Admin page password, typed twice. Never saved with the draft. */
+  adminPassword: string
+  adminPasswordConfirm: string
+
   organizerPlaying: boolean
   organizerName: string
   organizerPassword: string
@@ -46,6 +50,8 @@ export const emptyDraft = (): EventDraft => ({
   restrictionChoices: 2,
   exclusions: [],
   groupSize: null,
+  adminPassword: '',
+  adminPasswordConfirm: '',
   organizerPlaying: false,
   organizerName: '',
   organizerPassword: '',
@@ -115,7 +121,10 @@ export function validGroupSizes(participantCount: number): number[] {
   return sizes
 }
 
-export type DraftErrors = Partial<Record<'name' | 'format' | 'participants' | 'organizer', string>>
+export type DraftErrors = Partial<Record<'name' | 'format' | 'participants' | 'admin' | 'organizer', string>>
+
+/** Both admin password boxes have something in them; Continue stays disabled until they do. */
+export const adminPasswordEntered = (draft: EventDraft) => Boolean(draft.adminPassword && draft.adminPasswordConfirm)
 
 export function validate(draft: EventDraft): DraftErrors {
   const errors: DraftErrors = {}
@@ -128,6 +137,9 @@ export function validate(draft: EventDraft): DraftErrors {
   if (dupes.length) errors.participants = `Names must be unique: ${dupes.join(', ')} appears more than once.`
   else if (names.length < 2) errors.participants = 'Add at least two participants.'
   else if (names.some((n) => n.length > 60)) errors.participants = 'Keep names under 60 characters.'
+
+  if (!draft.adminPassword) errors.admin = 'Choose an admin password.'
+  else if (draft.adminPassword !== draft.adminPasswordConfirm) errors.admin = "The admin passwords don't match."
 
   if (draft.organizerPlaying) {
     if (!names.some((n) => key(n) === key(draft.organizerName))) errors.organizer = 'Pick your name from the list.'
@@ -156,6 +168,7 @@ export function toPayload(draft: EventDraft): EventCreate {
     restriction_choices: draft.restrictionChoices,
     exclusions: activeExclusions(draft),
     group_size: draft.groupSize,
+    admin_password: draft.adminPassword,
     organizer: draft.organizerPlaying ? { name: draft.organizerName, password: draft.organizerPassword } : null,
   }
 }

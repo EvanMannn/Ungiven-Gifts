@@ -1,10 +1,30 @@
 from fastapi import APIRouter, HTTPException, status
 
-from ..deps import AdminEventDep, Repo
+from ..deps import AdminEventDep, EventDep, Repo, SettingsDep
 from ..event_builder import to_public
-from ..models import AdminParticipant, AdminView, EventRecord, EventUpdate
+from ..models import (
+    AdminLoginRequest,
+    AdminLoginResponse,
+    AdminParticipant,
+    AdminView,
+    EventRecord,
+    EventUpdate,
+)
+from ..security import ADMIN_SUBJECT, issue_token, verify_password
 
 router = APIRouter(prefix="/events/{slug}/admin", tags=["admin"])
+
+
+@router.post("/login")
+async def admin_login(
+    body: AdminLoginRequest, event: EventDep, settings: SettingsDep
+) -> AdminLoginResponse:
+    if event.admin_password_hash is None or not verify_password(
+        body.password, event.admin_password_hash
+    ):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Wrong admin password.")
+    # The admin password can't be reset, so its version never changes.
+    return AdminLoginResponse(token=issue_token(event.slug, ADMIN_SUBJECT, 0, settings.secret_key))
 
 
 @router.get("")

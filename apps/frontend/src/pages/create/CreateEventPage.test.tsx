@@ -4,12 +4,18 @@ import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { api } from '@/api/client'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { session } from '@/lib/session'
 import CreateEventPage from './CreateEventPage'
 
 vi.mock('@/api/client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/api/client')>()),
   api: { createEvent: vi.fn() },
 }))
+
+async function enterAdminPassword(user: ReturnType<typeof userEvent.setup>, confirm = 'admin-pw') {
+  await user.type(screen.getByLabelText('Admin password'), 'admin-pw')
+  await user.type(screen.getByLabelText('Admin password again'), confirm)
+}
 
 function renderPage() {
   return render(
@@ -35,12 +41,15 @@ describe('CreateEventPage', () => {
     const user = userEvent.setup()
     vi.mocked(api.createEvent).mockResolvedValue({
       slug: 'abc23456',
-      admin_key: 'secret-key',
+      admin_token: 'admin-tok',
       organizer_participant_id: null,
       organizer_token: null,
     })
     renderPage()
 
+    // Continue stays disabled until both admin password boxes are filled in.
+    expect(screen.getByRole('button', { name: /continue/i })).toBeDisabled()
+    await enterAdminPassword(user)
     await user.click(screen.getByRole('button', { name: /continue/i }))
     expect(screen.getByText('A few things need fixing')).toBeInTheDocument()
 
@@ -62,6 +71,7 @@ describe('CreateEventPage', () => {
         name: 'Playgroup Santa',
         format: 'Commander',
         restrictions: ['Mono-colored', 'No tutors'],
+        admin_password: 'admin-pw',
         participants: [
           expect.objectContaining({ name: 'Alice' }),
           expect.objectContaining({ name: 'Bob' }),
@@ -71,8 +81,10 @@ describe('CreateEventPage', () => {
     )
     expect(await screen.findByText('Playgroup Santa is ready')).toBeInTheDocument()
     expect(screen.getByLabelText('Participant link')).toHaveValue(`${window.location.origin}/e/abc23456`)
-    expect(screen.getByLabelText('Admin link')).toHaveValue(`${window.location.origin}/e/abc23456/admin?key=secret-key`)
-    expect(localStorage.getItem('ungiven-gifts:abc23456')).toContain('secret-key')
+    expect(screen.getByLabelText('Admin link')).toHaveValue(`${window.location.origin}/e/abc23456/admin`)
+    expect(session.adminToken('abc23456')).toBe('admin-tok')
+    // Passwords never end up in the saved draft.
+    expect(localStorage.getItem('ungiven-gifts:create-draft') ?? '').not.toContain('admin-pw')
   })
 
   it('shows the API error and stays on review when creation fails', async () => {
@@ -82,6 +94,7 @@ describe('CreateEventPage', () => {
 
     await user.type(screen.getByLabelText('Event name'), 'X')
     await user.type(screen.getByLabelText(/^Names/), 'Alice\nBob')
+    await enterAdminPassword(user)
     await user.click(screen.getByRole('button', { name: /continue/i }))
     await user.click(screen.getByRole('button', { name: /review/i }))
     await user.click(screen.getByRole('button', { name: /create event/i }))
@@ -94,7 +107,7 @@ describe('CreateEventPage', () => {
     const user = userEvent.setup()
     vi.mocked(api.createEvent).mockResolvedValue({
       slug: 'abc23456',
-      admin_key: 'k',
+      admin_token: 'admin-tok',
       organizer_participant_id: null,
       organizer_token: null,
     })
@@ -102,6 +115,7 @@ describe('CreateEventPage', () => {
 
     await user.type(screen.getByLabelText('Event name'), 'X')
     await user.type(screen.getByLabelText(/^Names/), 'Alice\nBob\nCara\nDan')
+    await enterAdminPassword(user)
     await user.click(screen.getByRole('button', { name: /continue/i }))
 
     await user.click(screen.getByRole('radio', { name: /yes, split/i }))
@@ -113,6 +127,18 @@ describe('CreateEventPage', () => {
     expect(screen.getByText('2 groups of 2, assigned randomly')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /create event/i }))
     expect(api.createEvent).toHaveBeenCalledWith(expect.objectContaining({ group_size: 2 }))
+  })
+
+  it('stops on mismatched admin passwords', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await user.type(screen.getByLabelText('Event name'), 'X')
+    await user.type(screen.getByLabelText(/^Names/), 'Alice\nBob')
+    await enterAdminPassword(user, 'typo')
+    await user.click(screen.getByRole('button', { name: /continue/i }))
+
+    expect(screen.getAllByText("The admin passwords don't match.").length).toBeGreaterThan(0)
+    expect(screen.getByText('Create an event')).toBeInTheDocument()
   })
 
   it('restores an unsent draft after a reload', async () => {

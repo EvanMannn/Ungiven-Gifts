@@ -18,12 +18,15 @@ export interface EventCreate {
   exclusions?: [string, string][]
   /** People per build group, or null for no groups. Must split everyone evenly. */
   group_size?: number | null
+  /** The organizer's admin page password. Can't be reset. */
+  admin_password: string
   organizer?: { name: string; password: string } | null
 }
 
 export interface EventCreated {
   slug: string
-  admin_key: string
+  /** Logs the creator in as admin straight away. */
+  admin_token: string
   organizer_participant_id: string | null
   organizer_token: string | null
 }
@@ -45,6 +48,10 @@ export interface ParticipantMatch {
   participant_id: string
   name: string
   claimed: boolean
+}
+
+export interface AdminLoginResponse {
+  token: string
 }
 
 export interface LoginResponse {

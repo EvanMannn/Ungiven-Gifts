@@ -6,18 +6,34 @@ import { ErrorAlert } from '@/components/ErrorAlert'
 import { Button } from '@/components/ui/button'
 import { session } from '@/lib/session'
 import { CreatedStep } from './CreatedStep'
-import { type DraftErrors, type EventDraft, emptyDraft, participantNames, toPayload, validGroupSizes, validate } from './draft'
+import {
+  type DraftErrors,
+  type EventDraft,
+  adminPasswordEntered,
+  emptyDraft,
+  participantNames,
+  toPayload,
+  validGroupSizes,
+  validate,
+} from './draft'
 import { EventForm } from './EventForm'
 import { GroupsStep } from './GroupsStep'
 import { ReviewStep } from './ReviewStep'
 
 const DRAFT_STORAGE_KEY = 'ungiven-gifts:create-draft'
 
-// Unsent form progress survives a refresh. The password is deliberately never stored.
+// Unsent form progress survives a refresh. Passwords are deliberately never stored.
+const withoutPasswords = (draft: EventDraft): EventDraft => ({
+  ...draft,
+  organizerPassword: '',
+  adminPassword: '',
+  adminPasswordConfirm: '',
+})
+
 function loadDraft(): EventDraft {
   try {
     const saved = JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY) ?? 'null')
-    return saved ? { ...emptyDraft(), ...saved, organizerPassword: '' } : emptyDraft()
+    return saved ? withoutPasswords({ ...emptyDraft(), ...saved }) : emptyDraft()
   } catch {
     return emptyDraft()
   }
@@ -25,7 +41,7 @@ function loadDraft(): EventDraft {
 
 function saveDraft(draft: EventDraft | null) {
   try {
-    if (draft) localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({ ...draft, organizerPassword: '' }))
+    if (draft) localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(withoutPasswords(draft)))
     else localStorage.removeItem(DRAFT_STORAGE_KEY)
   } catch {
     // Storage unavailable; the draft just won't survive a refresh.
@@ -83,7 +99,7 @@ export default function CreateEventPage() {
     try {
       const payload = toPayload(draft)
       const created = await api.createEvent(payload)
-      session.setAdminKey(created.slug, created.admin_key)
+      session.setAdminToken(created.slug, created.admin_token)
       if (created.organizer_token) session.setToken(created.slug, created.organizer_token)
       saveDraft(null)
       setStage({ kind: 'done', created })
@@ -113,7 +129,7 @@ export default function CreateEventPage() {
           {errorCount > 0 && <ErrorAlert title="A few things need fixing" message={Object.values(errors).join('\n')} />}
           <EventForm draft={draft} errors={errors} onChange={update} />
           <div className="flex justify-end">
-            <Button size="lg" onClick={continueToGroups}>
+            <Button size="lg" onClick={continueToGroups} disabled={!adminPasswordEntered(draft)}>
               Continue <ArrowRight />
             </Button>
           </div>

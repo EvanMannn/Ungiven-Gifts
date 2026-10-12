@@ -30,6 +30,6 @@ export function eventUrl(slug: string) {
   return `${window.location.origin}/e/${slug}`
 }
 
-export function adminUrl(slug: string, adminKey: string) {
-  return `${window.location.origin}/e/${slug}/admin?key=${encodeURIComponent(adminKey)}`
+export function adminUrl(slug: string) {
+  return `${window.location.origin}/e/${slug}/admin`
 }
