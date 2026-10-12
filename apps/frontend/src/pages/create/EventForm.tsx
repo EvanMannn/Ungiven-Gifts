@@ -302,7 +302,7 @@ function ExclusionsSection({ draft, onChange, names }: Omit<Props, 'errors'> & {
 function OrganizerSection({ draft, errors, onChange, names }: Props & { names: string[] }) {
   return (
     <Section
-      title="You, the organizer"
+      title="Organizer settings"
       description="Your admin password lets you manage the event: edit details and reset forgotten passwords."
     >
       <Alert className="border-holly/60 bg-holly/10">
