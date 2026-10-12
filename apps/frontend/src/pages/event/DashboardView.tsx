@@ -23,6 +23,7 @@ interface Props {
 export function DashboardView({ slug, token, dashboard, onChange, onReplay, onLogout }: Props) {
   const { event, recipient } = dashboard
   const isAdmin = Boolean(session.adminToken(slug))
+  const chosen = dashboard.restriction_options.find((r) => r.title === dashboard.chosen_restriction)
 
   return (
     <div className="flex flex-col gap-6">
@@ -54,8 +55,11 @@ export function DashboardView({ slug, token, dashboard, onChange, onReplay, onLo
 
         {dashboard.restriction_options.length > 0 && (
           <Widget icon={<Wand2 />} title="Your restriction" className="md:col-span-2">
-            {dashboard.chosen_restriction ? (
-              <p className="text-2xl font-bold text-gold">{dashboard.chosen_restriction}</p>
+            {chosen ? (
+              <div className="flex flex-col gap-1">
+                <p className="text-2xl font-bold text-gold">{chosen.title}</p>
+                {chosen.description && <p className="text-muted-foreground">{chosen.description}</p>}
+              </div>
             ) : (
               <p className="text-sm text-holly-light">You haven't picked one yet.</p>
             )}

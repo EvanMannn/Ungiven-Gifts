@@ -55,7 +55,10 @@ describe('CreateEventPage', () => {
 
     await user.type(screen.getByLabelText('Event name'), 'Playgroup Santa')
     await user.type(screen.getByLabelText(/^Names/), 'Alice\nBob\nCara')
-    await user.type(screen.getByLabelText('Restrictions, one per line'), 'Mono-colored\nNo tutors')
+    await user.type(screen.getByLabelText('Title'), 'Mono-colored')
+    await user.type(screen.getByLabelText('Description'), 'One color only.')
+    await user.click(screen.getByRole('button', { name: 'Add restriction' }))
+    await user.type(screen.getByLabelText('Title'), 'No tutors{Enter}')
     await user.click(screen.getByRole('button', { name: /continue/i }))
 
     // 3 people can't be split evenly, so the groups step has nothing to offer.
@@ -70,7 +73,10 @@ describe('CreateEventPage', () => {
       expect.objectContaining({
         name: 'Playgroup Santa',
         format: 'Commander',
-        restrictions: ['Mono-colored', 'No tutors'],
+        restrictions: [
+          { title: 'Mono-colored', description: 'One color only.' },
+          { title: 'No tutors', description: '' },
+        ],
         admin_password: 'admin-pw',
         participants: [
           expect.objectContaining({ name: 'Alice' }),
@@ -127,6 +133,38 @@ describe('CreateEventPage', () => {
     expect(screen.getByText('2 groups of 2, assigned randomly')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /create event/i }))
     expect(api.createEvent).toHaveBeenCalledWith(expect.objectContaining({ group_size: 2 }))
+  })
+
+  it('lists restrictions as collapsed rows, opening one description at a time', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    for (const [title, description] of [
+      ['Treehugger', 'Trees in every art.'],
+      ['Gamba', 'Coin flips and dice.'],
+    ]) {
+      await user.type(screen.getByLabelText('Title'), title)
+      await user.type(screen.getByLabelText('Description'), description)
+      await user.click(screen.getByRole('button', { name: 'Add restriction' }))
+    }
+
+    // Collapsed by default.
+    expect(screen.queryByText('Trees in every art.')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Treehugger' }))
+    expect(screen.getByText('Trees in every art.')).toBeInTheDocument()
+
+    // Opening another closes the first.
+    await user.click(screen.getByRole('button', { name: 'Gamba' }))
+    expect(screen.getByText('Coin flips and dice.')).toBeInTheDocument()
+    expect(screen.queryByText('Trees in every art.')).not.toBeInTheDocument()
+
+    // A title already listed can't be added again.
+    await user.type(screen.getByLabelText('Title'), 'gamba')
+    expect(screen.getByText('That one is already in the list.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add restriction' })).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: 'Remove Gamba' }))
+    expect(screen.queryByRole('button', { name: 'Gamba' })).not.toBeInTheDocument()
   })
 
   it('stops on mismatched admin passwords', async () => {

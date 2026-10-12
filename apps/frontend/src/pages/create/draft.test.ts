@@ -4,6 +4,7 @@ import { RESTRICTION_IDEAS } from '@/lib/restrictionIdeas'
 import {
   type EventDraft,
   activeExclusions,
+  addRestrictions,
   adminPasswordEntered,
   applyImport,
   availablePartners,
@@ -67,7 +68,10 @@ describe('toPayload', () => {
         format: 'Other',
         customFormat: 'Canadian Highlander',
         budget: '  ',
-        restrictionsText: 'Mono-colored\n\nNo tutors\nMono-colored',
+        restrictions: [
+          { title: 'Mono-colored', description: 'One color only.' },
+          { title: 'No tutors', description: '' },
+        ],
         exclusions: [['Alice', 'Bob'], ['Alice', 'Removed Person']],
         organizerPlaying: true,
         organizerName: 'Alice',
@@ -79,7 +83,10 @@ describe('toPayload', () => {
       format: 'Canadian Highlander',
       budget: null,
       exchange_date: null,
-      restrictions: ['Mono-colored', 'No tutors'],
+      restrictions: [
+        { title: 'Mono-colored', description: 'One color only.' },
+        { title: 'No tutors', description: '' },
+      ],
       exclusions: [['Alice', 'Bob']],
       admin_password: 'admin-pw',
       organizer: { name: 'Alice', password: 'pw' },
@@ -113,28 +120,48 @@ describe('validGroupSizes', () => {
   })
 })
 
+/** Title-only restrictions, for brevity. */
+const titled = (...titles: string[]) => titles.map((title) => ({ title, description: '' }))
+const titles = (list: { title: string }[]) => list.map((r) => r.title)
+
 describe('pickIdeas', () => {
-  const pool = ['A', 'B', 'C', 'D', 'E']
+  const pool = titled('A', 'B', 'C', 'D', 'E')
 
   it('picks the requested number, never repeating one already listed', () => {
-    const picked = pickIdeas(draft({ restrictionsText: 'B\nD' }), pool, 2)
+    const picked = pickIdeas(draft({ restrictions: titled('b', 'D') }), pool, 2)
     expect(picked).toHaveLength(2)
-    expect(picked.every((idea) => ['A', 'C', 'E'].includes(idea))).toBe(true)
+    expect(titles(picked).every((t) => ['A', 'C', 'E'].includes(t))).toBe(true)
   })
 
   it('returns whatever is left when asked for more than remain', () => {
-    expect(pickIdeas(draft({ restrictionsText: 'A\nB\nC' }), pool, 10).sort()).toEqual(['D', 'E'])
+    expect(titles(pickIdeas(draft({ restrictions: titled('A', 'B', 'C') }), pool, 10)).sort()).toEqual(['D', 'E'])
   })
 
   it('is random but repeatable with a fixed random source', () => {
     const alwaysZero = () => 0
     expect(pickIdeas(draft(), pool, 5, alwaysZero)).toEqual(pickIdeas(draft(), pool, 5, alwaysZero))
-    expect(new Set(pickIdeas(draft(), pool, 5)).size).toBe(5)
+    expect(new Set(titles(pickIdeas(draft(), pool, 5))).size).toBe(5)
   })
 
-  it('has unique built-in ideas, each within the API limit', () => {
-    expect(new Set(RESTRICTION_IDEAS).size).toBe(RESTRICTION_IDEAS.length)
-    expect(RESTRICTION_IDEAS.every((idea) => idea.length <= 300)).toBe(true)
+  it('has unique built-in ideas with short titles', () => {
+    const ideaTitles = RESTRICTION_IDEAS.map((idea) => idea.title.toLowerCase())
+    expect(new Set(ideaTitles).size).toBe(RESTRICTION_IDEAS.length)
+    expect(RESTRICTION_IDEAS.every((idea) => idea.title.length <= 100 && idea.description.length <= 2000)).toBe(true)
+  })
+})
+
+describe('addRestrictions', () => {
+  it('trims, skips blank titles and titles already listed (ignoring case), and counts the skips', () => {
+    const result = addRestrictions(draft({ restrictions: titled('Treehugger') }), [
+      { title: '  One-drop commander ', description: ' Commander costs 1 or less. ' },
+      { title: 'TREEHUGGER', description: 'dupe' },
+      { title: '   ', description: 'no title' },
+    ])
+    expect(result.restrictions).toEqual([
+      { title: 'Treehugger', description: '' },
+      { title: 'One-drop commander', description: 'Commander costs 1 or less.' },
+    ])
+    expect(result.skipped).toBe(2)
   })
 })
 

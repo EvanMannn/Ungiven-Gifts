@@ -1,5 +1,11 @@
 // Mirrors apps/backend/ungiven_gifts_api/models.py. Keep the two in sync.
 
+/** A deckbuilding restriction. Titles are unique within an event; a choice is saved by title. */
+export interface Restriction {
+  title: string
+  description: string
+}
+
 export interface ParticipantIn {
   name: string
   answers?: Record<string, string>
@@ -13,7 +19,7 @@ export interface EventCreate {
   exchange_date?: string | null
   participants: ParticipantIn[]
   questions?: string[]
-  restrictions?: string[]
+  restrictions?: Restriction[]
   restriction_choices?: number
   exclusions?: [string, string][]
   /** People per build group, or null for no groups. Must split everyone evenly. */
@@ -70,7 +76,8 @@ export interface Dashboard {
   participant_id: string
   name: string
   recipient: { name: string; answers: QuestionAnswer[] }
-  restriction_options: string[]
+  restriction_options: Restriction[]
+  /** Title of the chosen option. */
   chosen_restriction: string | null
   group_mates: string[] | null
   onboarded: boolean
@@ -88,7 +95,7 @@ export interface AdminParticipant {
 export interface AdminView {
   event: EventPublic
   questions: string[]
-  restrictions: string[]
+  restrictions: Restriction[]
   participants: AdminParticipant[]
 }
 

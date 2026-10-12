@@ -34,9 +34,10 @@ export function ReviewStep({ payload }: { payload: EventCreate }) {
                   Each builder picks from {Math.min(payload.restriction_choices ?? 2, payload.restrictions.length)}:
                 </span>
                 <span className="mt-2 flex flex-wrap gap-1.5">
+                  {/* Titles only: descriptions would make this hard to scan. */}
                   {payload.restrictions.map((r) => (
-                    <Badge key={r} variant="secondary">
-                      {r}
+                    <Badge key={r.title} variant="secondary">
+                      {r.title}
                     </Badge>
                   ))}
                 </span>

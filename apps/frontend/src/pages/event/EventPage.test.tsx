@@ -37,7 +37,10 @@ const dashboard: Dashboard = {
   participant_id: 'p1',
   name: 'Alice',
   recipient: { name: 'Bob', answers: [{ question: 'Pet cards?', answer: 'Mulldrifter' }] },
-  restriction_options: ['Mono-colored', 'No tutors'],
+  restriction_options: [
+    { title: 'Mono-colored', description: 'One color only.' },
+    { title: 'No tutors', description: '' },
+  ],
   chosen_restriction: null,
   group_mates: ['Cara'],
   onboarded: false,

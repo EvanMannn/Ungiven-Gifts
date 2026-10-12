@@ -10,12 +10,14 @@ from typing import Annotated
 from pydantic import BaseModel, Field, StringConstraints
 
 Name = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=60)]
-ShortText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=300)]
 # Questionnaire prompts copied from a form header can run long.
 QuestionText = Annotated[
     str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1000)
 ]
 LongText = Annotated[str, StringConstraints(strip_whitespace=True, max_length=2000)]
+RestrictionTitle = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)
+]
 # Not stripped: spaces are part of a password.
 Password = Annotated[str, StringConstraints(min_length=1, max_length=200)]
 
@@ -23,6 +25,14 @@ Password = Annotated[str, StringConstraints(min_length=1, max_length=200)]
 # ---------------------------------------------------------------------------
 # Event creation
 # ---------------------------------------------------------------------------
+
+
+class Restriction(BaseModel):
+    """A deckbuilding restriction. The title is what people see at a glance and what a choice is
+    saved by, so titles are unique within an event. The description holds the details."""
+
+    title: RestrictionTitle
+    description: LongText = ""
 
 
 class ParticipantIn(BaseModel):
@@ -48,7 +58,7 @@ class EventCreate(BaseModel):
     participants: list[ParticipantIn] = Field(min_length=2, max_length=500)
     questions: list[QuestionText] = Field(default_factory=list, max_length=50)
 
-    restrictions: list[ShortText] = Field(default_factory=list, max_length=200)
+    restrictions: list[Restriction] = Field(default_factory=list, max_length=200)
     restriction_choices: int = Field(default=2, ge=1, le=10)
 
     # Pairs of participant names that must not be matched in either direction.
@@ -84,6 +94,7 @@ class ParticipantRecord(BaseModel):
     answers: dict[str, str] = Field(default_factory=dict)
 
     recipient_id: str
+    # Restriction titles, looked up in EventRecord.restrictions.
     restriction_options: list[str] = Field(default_factory=list)
     chosen_restriction: str | None = None
 
@@ -105,10 +116,13 @@ class EventRecord(BaseModel):
     # None only for events created before admin passwords existed; nobody can log in as their admin.
     admin_password_hash: str | None = None
     questions: list[str] = Field(default_factory=list)
-    restrictions: list[str] = Field(default_factory=list)
+    restrictions: list[Restriction] = Field(default_factory=list)
     group_size: int | None = None
     exclusions: list[tuple[str, str]] = Field(default_factory=list)
     participants: list[ParticipantRecord]
+
+    def restriction(self, title: str) -> Restriction | None:
+        return next((r for r in self.restrictions if r.title == title), None)
 
     def participant(self, participant_id: str) -> ParticipantRecord | None:
         return next((p for p in self.participants if p.id == participant_id), None)
@@ -178,7 +192,8 @@ class Dashboard(BaseModel):
     participant_id: str
     name: str
     recipient: RecipientView
-    restriction_options: list[str]
+    restriction_options: list[Restriction]
+    # Title of the chosen option.
     chosen_restriction: str | None
     # People in the same group: safe to talk deck-building with, since none of them gift each other.
     group_mates: list[str] | None
@@ -186,6 +201,7 @@ class Dashboard(BaseModel):
 
 
 class ChooseRestriction(BaseModel):
+    # The title of one of your options.
     restriction: str
 
 
@@ -201,7 +217,7 @@ class AdminParticipant(BaseModel):
 class AdminView(BaseModel):
     event: EventPublic
     questions: list[str]
-    restrictions: list[str]
+    restrictions: list[Restriction]
     participants: list[AdminParticipant]
 
 

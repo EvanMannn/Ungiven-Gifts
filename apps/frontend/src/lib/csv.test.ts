@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { importQuestionnaire, parseCsv } from './csv'
+import { importQuestionnaire, importRestrictions, parseCsv } from './csv'
 
 describe('parseCsv', () => {
   it('handles quotes, escaped quotes, embedded commas and newlines', () => {
@@ -37,5 +37,25 @@ describe('importQuestionnaire', () => {
 
   it('requires a name column', () => {
     expect(() => importQuestionnaire('Color,Card\nGreen,Llanowar Elves')).toThrow(/name/)
+  })
+})
+
+describe('importRestrictions', () => {
+  it('reads Title and Description columns, in any order and case', () => {
+    const csv = 'Notes,DESCRIPTION,Restriction Title\nx,"Trees, everywhere.",Treehugger\ny,,One-drop commander\nz,orphan,\n'
+    expect(importRestrictions(csv)).toEqual([
+      { title: 'Treehugger', description: 'Trees, everywhere.' },
+      { title: 'One-drop commander', description: '' },
+    ])
+  })
+
+  it('falls back to the first two columns without those headers', () => {
+    expect(importRestrictions('Name,Details\nGamba,Coin flips and dice\n')).toEqual([
+      { title: 'Gamba', description: 'Coin flips and dice' },
+    ])
+  })
+
+  it('rejects an empty file', () => {
+    expect(() => importRestrictions('')).toThrow(/empty/)
   })
 })

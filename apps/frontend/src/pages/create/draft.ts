@@ -1,5 +1,5 @@
 // State and rules for the create-event form, kept free of React so they're easy to test.
-import type { EventCreate } from '@/api/types'
+import type { EventCreate, Restriction } from '@/api/types'
 import type { QuestionnaireImport } from '@/lib/csv'
 import { formatBudget, parseBudget } from '@/lib/format'
 
@@ -18,8 +18,7 @@ export interface EventDraft {
   /** Keyed by casefolded name, so editing a name's capitalization keeps its answers. */
   answersByName: Record<string, Record<string, string>>
 
-  /** One restriction per line. */
-  restrictionsText: string
+  restrictions: Restriction[]
   restrictionChoices: number
 
   exclusions: [string, string][]
@@ -48,7 +47,7 @@ export const emptyDraft = (): EventDraft => ({
   namesText: '',
   questions: [],
   answersByName: {},
-  restrictionsText: '',
+  restrictions: [],
   restrictionChoices: 2,
   exclusions: [],
   groupSize: null,
@@ -84,8 +83,24 @@ export function duplicateNames(draft: EventDraft): string[] {
   return [...dupes]
 }
 
-export function restrictions(draft: EventDraft): string[] {
-  return [...new Set(lines(draft.restrictionsText))]
+/** Whether a restriction with this title (ignoring case and outer spaces) is already listed. */
+export function hasRestriction(draft: EventDraft, title: string): boolean {
+  return draft.restrictions.some((r) => key(r.title) === key(title))
+}
+
+/**
+ * Append restrictions, trimming them and skipping blank titles and any title already listed.
+ * Returns the new list and how many were skipped, so callers can say so.
+ */
+export function addRestrictions(draft: EventDraft, incoming: Restriction[]): { restrictions: Restriction[]; skipped: number } {
+  const list = [...draft.restrictions]
+  let skipped = 0
+  for (const r of incoming) {
+    const title = r.title.trim()
+    if (!title || list.some((existing) => key(existing.title) === key(title))) skipped++
+    else list.push({ title, description: r.description.trim() })
+  }
+  return { restrictions: list, skipped }
 }
 
 /** Exclusions whose names are both still in the participant list. */
@@ -98,9 +113,13 @@ export function activeExclusions(draft: EventDraft): [string, string][] {
  * Up to `count` random ideas from `pool` that aren't already in the restrictions list.
  * `random` is injectable so tests can make the pick predictable.
  */
-export function pickIdeas(draft: EventDraft, pool: readonly string[], count: number, random = Math.random): string[] {
-  const current = new Set(restrictions(draft))
-  const fresh = pool.filter((idea) => !current.has(idea))
+export function pickIdeas(
+  draft: EventDraft,
+  pool: readonly Restriction[],
+  count: number,
+  random = Math.random,
+): Restriction[] {
+  const fresh = pool.filter((idea) => !hasRestriction(draft, idea.title))
   // Fisher-Yates shuffle: walk backwards, swapping each slot with a random earlier (or same) one.
   for (let i = fresh.length - 1; i > 0; i--) {
     const j = Math.floor(random() * (i + 1))
@@ -196,7 +215,7 @@ export function toPayload(draft: EventDraft): EventCreate {
         Object.entries(draft.answersByName[key(name)] ?? {}).filter(([q]) => questionSet.has(q)),
       ),
     })),
-    restrictions: restrictions(draft),
+    restrictions: draft.restrictions,
     restriction_choices: draft.restrictionChoices,
     exclusions: activeExclusions(draft),
     group_size: draft.groupSize,
