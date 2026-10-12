@@ -1,6 +1,7 @@
 import { Download, FileUp, Lightbulb, Plus, ShieldAlert, X } from 'lucide-react'
 import { type ReactNode, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { BudgetInput } from '@/components/BudgetInput'
 import { Field } from '@/components/Field'
 import { SimpleSelect } from '@/components/SimpleSelect'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -12,7 +13,8 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { importQuestionnaire } from '@/lib/csv'
-import { MTG_FORMATS, RESTRICTION_IDEAS } from '@/lib/format'
+import { MTG_FORMATS } from '@/lib/format'
+import { RESTRICTION_IDEAS } from '@/lib/restrictionIdeas'
 import {
   type DraftErrors,
   type EventDraft,
@@ -23,6 +25,7 @@ import {
   availablePartners,
   key,
   participantNames,
+  pickIdeas,
   restrictions,
 } from './draft'
 
@@ -87,14 +90,8 @@ function DetailsSection({ draft, errors, onChange }: Props) {
             />
           )}
         </Field>
-        <Field label="Budget" htmlFor="budget" hint="Optional">
-          <Input
-            id="budget"
-            placeholder="$40"
-            value={draft.budget}
-            maxLength={60}
-            onChange={(e) => onChange({ budget: e.target.value })}
-          />
+        <Field label="Budget" htmlFor="budget" hint="Optional. Per gift, in dollars.">
+          <BudgetInput id="budget" value={draft.budget} onChange={(budget) => onChange({ budget })} />
         </Field>
         <Field label="Gift exchange date" htmlFor="date" hint="Optional">
           <Input id="date" type="date" value={draft.exchangeDate} onChange={(e) => onChange({ exchangeDate: e.target.value })} />
@@ -202,12 +199,18 @@ function ParticipantsSection({ draft, errors, onChange, names }: Props & { names
   )
 }
 
+const MAX_IDEAS = RESTRICTION_IDEAS.length
+
 function RestrictionsSection({ draft, onChange }: Omit<Props, 'errors'>) {
   const current = restrictions(draft)
+  // Kept as text so the box can be cleared while typing; clamped to 1..MAX_IDEAS when used.
+  const [ideaCountText, setIdeaCountText] = useState('5')
+  const ideaCount = Math.min(Math.max(Number(ideaCountText) || 1, 1), MAX_IDEAS)
+  const ideasLeft = MAX_IDEAS - RESTRICTION_IDEAS.filter((idea) => current.includes(idea)).length
 
   function addIdeas() {
-    const fresh = RESTRICTION_IDEAS.filter((idea) => !current.includes(idea))
-    onChange({ restrictionsText: [...current, ...fresh].join('\n') })
+    const picked = pickIdeas(draft, RESTRICTION_IDEAS, ideaCount)
+    onChange({ restrictionsText: [...current, ...picked].join('\n') })
   }
 
   return (
@@ -225,9 +228,21 @@ function RestrictionsSection({ draft, onChange }: Omit<Props, 'errors'>) {
         />
       </Field>
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <Button type="button" variant="ghost" onClick={addIdeas}>
-          <Lightbulb /> Add some ideas
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="ghost" onClick={addIdeas} disabled={ideasLeft === 0}>
+            <Lightbulb /> Add {ideaCount} random {ideaCount === 1 ? 'idea' : 'ideas'}
+          </Button>
+          <Input
+            type="number"
+            aria-label="How many ideas to add"
+            className="w-20"
+            min={1}
+            max={MAX_IDEAS}
+            value={ideaCountText}
+            onChange={(e) => setIdeaCountText(e.target.value)}
+            onBlur={() => setIdeaCountText(String(ideaCount))}
+          />
+        </div>
         {current.length > 1 && (
           <div className="flex items-center gap-3 text-sm">
             <Label htmlFor="choices">Options per builder</Label>

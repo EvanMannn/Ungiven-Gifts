@@ -1,12 +1,14 @@
 // State and rules for the create-event form, kept free of React so they're easy to test.
 import type { EventCreate } from '@/api/types'
 import type { QuestionnaireImport } from '@/lib/csv'
+import { formatBudget, parseBudget } from '@/lib/format'
 
 export interface EventDraft {
   name: string
   format: string
   customFormat: string
   description: string
+  /** Dollar amount as typed, like "40" or "40.50". Sent to the API as "$40" or "$40.50". */
   budget: string
   exchangeDate: string
 
@@ -92,6 +94,26 @@ export function activeExclusions(draft: EventDraft): [string, string][] {
   return draft.exclusions.filter(([a, b]) => names.has(key(a)) && names.has(key(b)))
 }
 
+/**
+ * Up to `count` random ideas from `pool` that aren't already in the restrictions list.
+ * `random` is injectable so tests can make the pick predictable.
+ */
+export function pickIdeas(draft: EventDraft, pool: readonly string[], count: number, random = Math.random): string[] {
+  const current = new Set(restrictions(draft))
+  const fresh = pool.filter((idea) => !current.has(idea))
+  // Fisher-Yates shuffle: walk backwards, swapping each slot with a random earlier (or same) one.
+  for (let i = fresh.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1))
+    ;[fresh[i], fresh[j]] = [fresh[j], fresh[i]]
+  }
+  return fresh.slice(0, count)
+}
+
+/** Budget in dollars, or null. Older drafts may hold text like "$40", which still reads as 40. */
+export function budgetAmount(draft: EventDraft): number | null {
+  return parseBudget(draft.budget)
+}
+
 /** Who `name` can still be added to a pair to avoid with: not themselves, and not anyone already paired with them. */
 export function availablePartners(draft: EventDraft, name: string): string[] {
   const taken = new Set([key(name)])
@@ -165,7 +187,7 @@ export function toPayload(draft: EventDraft): EventCreate {
     name: draft.name.trim(),
     format: draft.format === OTHER_FORMAT ? draft.customFormat.trim() : draft.format,
     description: draft.description.trim(),
-    budget: draft.budget.trim() || null,
+    budget: formatBudget(budgetAmount(draft)),
     exchange_date: draft.exchangeDate || null,
     questions: draft.questions,
     participants: names.map((name) => ({
