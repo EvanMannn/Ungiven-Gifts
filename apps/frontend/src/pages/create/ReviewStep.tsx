@@ -14,7 +14,7 @@ export function ReviewStep({ payload }: { payload: EventCreate }) {
         <CardTitle className="text-2xl">{payload.name}</CardTitle>
         <div className="flex flex-wrap gap-2">
           <Badge>{payload.format}</Badge>
-          {payload.budget && <Badge variant="gold">{payload.budget}</Badge>}
+          {payload.budget && <Badge variant="highlight">{payload.budget}</Badge>}
           {payload.exchange_date && <Badge variant="outline">{formatDate(payload.exchange_date)}</Badge>}
         </div>
       </CardHeader>
@@ -34,9 +34,10 @@ export function ReviewStep({ payload }: { payload: EventCreate }) {
                   Each builder picks from {Math.min(payload.restriction_choices ?? 2, payload.restrictions.length)}:
                 </span>
                 <span className="mt-2 flex flex-wrap gap-1.5">
+                  {/* Titles only: descriptions would make this hard to scan. */}
                   {payload.restrictions.map((r) => (
-                    <Badge key={r} variant="secondary">
-                      {r}
+                    <Badge key={r.title} variant="secondary">
+                      {r.title}
                     </Badge>
                   ))}
                 </span>

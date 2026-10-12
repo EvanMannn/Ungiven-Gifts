@@ -117,7 +117,7 @@ export default function CreateEventPage() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div>
-        <p className="text-sm font-medium tracking-wide text-gold uppercase">{heading.step}</p>
+        <p className="text-sm font-medium tracking-wide text-highlight uppercase">{heading.step}</p>
         <h1 className="text-3xl font-black">{heading.title}</h1>
         {stage.kind === 'review' && (
           <p className="text-muted-foreground">Names are drawn as soon as you create the event.</p>
@@ -162,7 +162,7 @@ export default function CreateEventPage() {
             <Button variant="ghost" size="lg" onClick={() => setStage({ kind: 'groups' })} disabled={submitting}>
               <ArrowLeft /> Back
             </Button>
-            <Button variant="holly" size="lg" onClick={create} disabled={submitting}>
+            <Button variant="brand" size="lg" onClick={create} disabled={submitting}>
               {submitting ? <Loader2 className="animate-spin" /> : <Sparkles />}
               Create event and draw names
             </Button>

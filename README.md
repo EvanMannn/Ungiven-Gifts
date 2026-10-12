@@ -44,7 +44,7 @@ cd apps/frontend && npm test
 
 ## UI
 
-The frontend uses [shadcn/ui](https://ui.shadcn.com) components on Tailwind CSS v4. The site is dark-only, with pine green, holly red and gold accents. The theme tokens are in `apps/frontend/src/index.css`. To add more components, run `npx shadcn@latest add <name>` from `apps/frontend`.
+The frontend uses [shadcn/ui](https://ui.shadcn.com) components on Tailwind CSS v4. The site is dark-only, in a "frost" palette: midnight navy, icy blue and silver, with a cranberry accent. The theme tokens are in `apps/frontend/src/index.css`. To add more components, run `npx shadcn@latest add <name>` from `apps/frontend`.
 
 Pages:
 

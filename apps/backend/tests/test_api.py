@@ -92,6 +92,24 @@ def test_find_participant_by_name(client: TestClient, event_payload: dict) -> No
     assert "exactly" in missing.json()["detail"]
 
 
+def test_restriction_descriptions_reach_the_builder(
+    client: TestClient, event_payload: dict
+) -> None:
+    event_payload["restrictions"] = [{"title": "Mono-colored", "description": "One color only."}]
+    slug = _create(client, event_payload)["slug"]
+    me = client.get(f"/api/events/{slug}/me", headers=_auth(_login(client, slug, "Bob"))).json()
+    assert me["restriction_options"] == [
+        {"title": "Mono-colored", "description": "One color only."}
+    ]
+
+
+def test_duplicate_restriction_titles_rejected(client: TestClient, event_payload: dict) -> None:
+    event_payload["restrictions"] = [{"title": "Tribal"}, {"title": "tribal", "description": "x"}]
+    res = client.post("/api/events", json=event_payload)
+    assert res.status_code == 422
+    assert "unique" in res.json()["detail"]
+
+
 def test_choose_restriction_and_onboard(client: TestClient, event_payload: dict) -> None:
     slug = _create(client, event_payload)["slug"]
     headers = _auth(_login(client, slug, "Bob"))
@@ -103,10 +121,11 @@ def test_choose_restriction_and_onboard(client: TestClient, event_payload: dict)
     assert bad.status_code == 422
 
     pick = me["restriction_options"][1]
+    assert set(pick) == {"title", "description"}
     res = client.post(
-        f"/api/events/{slug}/me/restriction", headers=headers, json={"restriction": pick}
+        f"/api/events/{slug}/me/restriction", headers=headers, json={"restriction": pick["title"]}
     )
-    assert res.json()["chosen_restriction"] == pick
+    assert res.json()["chosen_restriction"] == pick["title"]
 
     done = client.post(f"/api/events/{slug}/me/onboarded", headers=headers).json()
     assert done["onboarded"] is True

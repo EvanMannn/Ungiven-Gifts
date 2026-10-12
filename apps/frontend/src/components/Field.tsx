@@ -20,7 +20,7 @@ export function Field({
       <Label htmlFor={htmlFor}>{label}</Label>
       {children}
       {error ? (
-        <p className="text-sm text-holly-light" role="alert">
+        <p className="text-sm text-error" role="alert">
           {error}
         </p>
       ) : (

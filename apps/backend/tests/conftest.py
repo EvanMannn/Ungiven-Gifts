@@ -21,7 +21,12 @@ def event_payload() -> dict:
         "budget": "$40",
         "admin_password": "admin-pw",
         "questions": ["Favorite colors?", "Pet cards?"],
-        "restrictions": ["Mono-colored", "No mythics", "Tribal", "Under $25"],
+        "restrictions": [
+            {"title": "Mono-colored", "description": "One color only."},
+            {"title": "No mythics"},
+            {"title": "Tribal"},
+            {"title": "Under $25"},
+        ],
         "participants": [
             {
                 "name": "Alice",

@@ -63,10 +63,10 @@ export function RevealCarousel({ slug, token, dashboard, onChange, onFinish }: P
       <p className="text-center text-sm text-muted-foreground">
         {dashboard.event.name} · Hi, {dashboard.name}
       </p>
-      <Card className="overflow-hidden border-gold/40 pt-0">
-        <Progress value={((index + 1) / steps.length) * 100} className="h-1 rounded-none [&>*]:bg-gold" />
+      <Card className="overflow-hidden border-highlight/40 pt-0">
+        <Progress value={((index + 1) / steps.length) * 100} className="h-1 rounded-none [&>*]:bg-highlight" />
         <CardContent className="flex min-h-80 flex-col gap-4 pt-2">
-          <p className="text-xs font-bold tracking-widest text-gold uppercase">
+          <p className="text-xs font-bold tracking-widest text-highlight uppercase">
             {TITLES[step]} · {index + 1}/{steps.length}
           </p>
 
@@ -74,7 +74,7 @@ export function RevealCarousel({ slug, token, dashboard, onChange, onFinish }: P
             (unwrapped ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-1 text-center">
                 <p className="text-muted-foreground">You're building a deck for</p>
-                <p className="animate-in text-5xl font-black text-holly-light duration-500 zoom-in-50 fade-in">
+                <p className="animate-in text-5xl font-black text-brand-light duration-500 zoom-in-50 fade-in">
                   {dashboard.recipient.name}
                 </p>
                 <p className="mt-4 text-sm text-muted-foreground">Keep it secret!</p>
@@ -83,9 +83,9 @@ export function RevealCarousel({ slug, token, dashboard, onChange, onFinish }: P
               <button
                 type="button"
                 onClick={() => setUnwrapped(true)}
-                className="group flex flex-1 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-gold/40 p-8 transition-colors hover:border-gold hover:bg-pine-deep/30"
+                className="group flex flex-1 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-highlight/40 p-8 transition-colors hover:border-highlight hover:bg-selected/30"
               >
-                <Gift className="size-16 text-holly transition-transform group-hover:scale-110 group-hover:-rotate-6" aria-hidden />
+                <Gift className="size-16 text-brand transition-transform group-hover:scale-110 group-hover:-rotate-6" aria-hidden />
                 <span className="font-bold">Click to unwrap your giftee</span>
               </button>
             ))}
@@ -132,7 +132,7 @@ export function RevealCarousel({ slug, token, dashboard, onChange, onFinish }: P
             <ArrowLeft /> Back
           </Button>
           {isLast ? (
-            <Button variant="holly" onClick={finish} disabled={!canContinue || finishing}>
+            <Button variant="brand" onClick={finish} disabled={!canContinue || finishing}>
               {finishing && <Loader2 className="animate-spin" />}
               Go to my dashboard
             </Button>

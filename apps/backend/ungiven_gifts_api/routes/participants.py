@@ -13,6 +13,7 @@ from ..models import (
     ParticipantRecord,
     QuestionAnswer,
     RecipientView,
+    Restriction,
 )
 from ..security import hash_password, issue_token, verify_password
 
@@ -108,7 +109,10 @@ def _dashboard(event: EventRecord, me: ParticipantRecord) -> Dashboard:
                 if q in recipient.answers
             ],
         ),
-        restriction_options=me.restriction_options,
+        # Participants only store titles; send the full restriction so the description shows too.
+        restriction_options=[
+            event.restriction(title) or Restriction(title=title) for title in me.restriction_options
+        ],
         chosen_restriction=me.chosen_restriction,
         group_mates=group_mates,
         onboarded=me.onboarded,

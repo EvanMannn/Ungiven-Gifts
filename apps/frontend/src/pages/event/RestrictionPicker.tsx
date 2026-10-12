@@ -33,24 +33,25 @@ export function RestrictionPicker({
 
   return (
     <div className={cn('grid gap-3', dashboard.restriction_options.length > 1 && 'sm:grid-cols-2')} role="radiogroup" aria-label="Restriction">
-      {dashboard.restriction_options.map((option) => {
-        const chosen = option === dashboard.chosen_restriction
+      {dashboard.restriction_options.map(({ title, description }) => {
+        const chosen = title === dashboard.chosen_restriction
         return (
           <button
-            key={option}
+            key={title}
             type="button"
             role="radio"
             aria-checked={chosen}
             disabled={saving !== null}
-            onClick={() => choose(option)}
+            onClick={() => choose(title)}
             className={cn(
-              'relative flex min-h-24 cursor-pointer items-center justify-center rounded-xl border-2 p-5 text-center font-bold text-balance transition-colors hover:border-gold/60 disabled:cursor-wait',
-              chosen ? 'border-gold bg-pine-deep/60 text-gold' : 'border-border',
+              'relative flex min-h-24 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-5 text-center text-balance transition-colors hover:border-highlight/60 disabled:cursor-wait',
+              chosen ? 'border-highlight bg-selected/60' : 'border-border',
             )}
           >
-            {option}
-            {chosen && <Check className="absolute top-2 right-2 size-4" aria-hidden />}
-            {saving === option && <Loader2 className="absolute top-2 right-2 size-4 animate-spin" aria-hidden />}
+            <span className={cn('font-bold', chosen && 'text-highlight')}>{title}</span>
+            {description && <span className="text-sm text-muted-foreground">{description}</span>}
+            {chosen && <Check className="absolute top-2 right-2 size-4 text-highlight" aria-hidden />}
+            {saving === title && <Loader2 className="absolute top-2 right-2 size-4 animate-spin" aria-hidden />}
           </button>
         )
       })}

@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import { importQuestionnaire } from '@/lib/csv'
+import { RESTRICTION_IDEAS } from '@/lib/restrictionIdeas'
 import {
   type EventDraft,
   activeExclusions,
+  addRestrictions,
   adminPasswordEntered,
   applyImport,
+  availablePartners,
+  budgetAmount,
   emptyDraft,
   participantNames,
+  pickIdeas,
   toPayload,
   validGroupSizes,
   validate,
@@ -63,7 +68,10 @@ describe('toPayload', () => {
         format: 'Other',
         customFormat: 'Canadian Highlander',
         budget: '  ',
-        restrictionsText: 'Mono-colored\n\nNo tutors\nMono-colored',
+        restrictions: [
+          { title: 'Mono-colored', description: 'One color only.' },
+          { title: 'No tutors', description: '' },
+        ],
         exclusions: [['Alice', 'Bob'], ['Alice', 'Removed Person']],
         organizerPlaying: true,
         organizerName: 'Alice',
@@ -75,7 +83,10 @@ describe('toPayload', () => {
       format: 'Canadian Highlander',
       budget: null,
       exchange_date: null,
-      restrictions: ['Mono-colored', 'No tutors'],
+      restrictions: [
+        { title: 'Mono-colored', description: 'One color only.' },
+        { title: 'No tutors', description: '' },
+      ],
       exclusions: [['Alice', 'Bob']],
       admin_password: 'admin-pw',
       organizer: { name: 'Alice', password: 'pw' },
@@ -106,6 +117,77 @@ describe('validGroupSizes', () => {
     expect(validGroupSizes(9)).toEqual([3])
     expect(validGroupSizes(7)).toEqual([])
     expect(validGroupSizes(3)).toEqual([])
+  })
+})
+
+/** Title-only restrictions, for brevity. */
+const titled = (...titles: string[]) => titles.map((title) => ({ title, description: '' }))
+const titles = (list: { title: string }[]) => list.map((r) => r.title)
+
+describe('pickIdeas', () => {
+  const pool = titled('A', 'B', 'C', 'D', 'E')
+
+  it('picks the requested number, never repeating one already listed', () => {
+    const picked = pickIdeas(draft({ restrictions: titled('b', 'D') }), pool, 2)
+    expect(picked).toHaveLength(2)
+    expect(titles(picked).every((t) => ['A', 'C', 'E'].includes(t))).toBe(true)
+  })
+
+  it('returns whatever is left when asked for more than remain', () => {
+    expect(titles(pickIdeas(draft({ restrictions: titled('A', 'B', 'C') }), pool, 10)).sort()).toEqual(['D', 'E'])
+  })
+
+  it('is random but repeatable with a fixed random source', () => {
+    const alwaysZero = () => 0
+    expect(pickIdeas(draft(), pool, 5, alwaysZero)).toEqual(pickIdeas(draft(), pool, 5, alwaysZero))
+    expect(new Set(titles(pickIdeas(draft(), pool, 5))).size).toBe(5)
+  })
+
+  it('has unique built-in ideas with short titles', () => {
+    const ideaTitles = RESTRICTION_IDEAS.map((idea) => idea.title.toLowerCase())
+    expect(new Set(ideaTitles).size).toBe(RESTRICTION_IDEAS.length)
+    expect(RESTRICTION_IDEAS.every((idea) => idea.title.length <= 100 && idea.description.length <= 2000)).toBe(true)
+  })
+})
+
+describe('addRestrictions', () => {
+  it('trims, skips blank titles and titles already listed (ignoring case), and counts the skips', () => {
+    const result = addRestrictions(draft({ restrictions: titled('Treehugger') }), [
+      { title: '  One-drop commander ', description: ' Commander costs 1 or less. ' },
+      { title: 'TREEHUGGER', description: 'dupe' },
+      { title: '   ', description: 'no title' },
+    ])
+    expect(result.restrictions).toEqual([
+      { title: 'Treehugger', description: '' },
+      { title: 'One-drop commander', description: 'Commander costs 1 or less.' },
+    ])
+    expect(result.skipped).toBe(2)
+  })
+})
+
+describe('budget', () => {
+  it('sends the amount with a dollar sign, showing cents only when there are some', () => {
+    expect(toPayload(draft({ budget: '40' })).budget).toBe('$40')
+    expect(toPayload(draft({ budget: '40.5' })).budget).toBe('$40.50')
+    expect(toPayload(draft({ budget: '' })).budget).toBeNull()
+  })
+
+  it('cleans up budgets saved as text by older drafts', () => {
+    expect(budgetAmount(draft({ budget: '$40' }))).toBe(40)
+  })
+})
+
+describe('availablePartners', () => {
+  it('leaves out the person themselves and anyone already paired with them', () => {
+    const d = draft({ exclusions: [['Alice', 'Bob'], ['cara', 'ALICE']] })
+    expect(availablePartners(d, 'alice')).toEqual(['Dan'])
+    expect(availablePartners(d, 'Bob')).toEqual(['Cara', 'Dan'])
+    expect(availablePartners(d, 'Dan')).toEqual(['Alice', 'Bob', 'Cara'])
+  })
+
+  it('is empty once someone is paired with everyone else', () => {
+    const d = draft({ exclusions: [['Alice', 'Bob'], ['Alice', 'Cara'], ['Alice', 'Dan']] })
+    expect(availablePartners(d, 'Alice')).toEqual([])
   })
 })
 

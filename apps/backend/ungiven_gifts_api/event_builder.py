@@ -47,10 +47,14 @@ def build_event(payload: EventCreate, slug: str, rng: random.Random) -> EventRec
     except pairing.PairingError as exc:
         raise EventValidationError(str(exc)) from exc
 
-    restrictions = list(dict.fromkeys(payload.restrictions))  # dedupe, keep order
-    options = pairing.assign_restriction_options(
-        ids, restrictions, payload.restriction_choices, rng
-    )
+    restrictions = payload.restrictions
+    titles = [r.title for r in restrictions]
+    seen: set[str] = set()
+    for title in titles:
+        if title.casefold() in seen:
+            raise EventValidationError(f"Restriction titles must be unique; {title!r} repeats.")
+        seen.add(title.casefold())
+    options = pairing.assign_restriction_options(ids, titles, payload.restriction_choices, rng)
 
     participants = [
         ParticipantRecord(

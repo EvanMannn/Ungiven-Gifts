@@ -35,7 +35,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
     return (
       <div className="flex flex-col items-center gap-4 py-24 text-center" role="alert">
-        <TriangleAlert className="size-10 text-holly-light" aria-hidden />
+        <TriangleAlert className="size-10 text-error" aria-hidden />
         <h1 className="text-2xl font-bold">Something went wrong</h1>
         <p className="max-w-md text-muted-foreground">
           This page hit an unexpected error. Reloading usually fixes it, and your saved progress is kept.

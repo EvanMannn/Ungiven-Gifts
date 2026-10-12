@@ -1,4 +1,4 @@
-import type { ParticipantIn } from '@/api/types'
+import type { ParticipantIn, Restriction } from '@/api/types'
 
 /** Parse RFC 4180 CSV: quoted fields, escaped quotes (""), commas and newlines inside quotes. */
 export function parseCsv(text: string): string[][] {
@@ -79,4 +79,26 @@ export function importQuestionnaire(text: string): QuestionnaireImport {
     .filter((p) => p.name !== '')
 
   return { questions: questionCols.map((c) => c.question), participants }
+}
+
+/**
+ * Turn a restrictions spreadsheet into restrictions.
+ *
+ * Expects a header row. Uses the columns headed "title" and "description" (any case); without
+ * them, the first column is the title and the second the description. Rows with no title are skipped.
+ */
+export function importRestrictions(text: string): Restriction[] {
+  const [header, ...rows] = parseCsv(text)
+  if (!header) throw new Error('The file is empty.')
+
+  const normalized = header.map((h) => h.trim().toLowerCase())
+  const found = normalized.findIndex((h) => h.includes('title'))
+  const titleCol = found === -1 ? 0 : found
+  const descriptionCol = normalized.findIndex((h, i) => i !== titleCol && h.includes('description'))
+  const fallbackDescriptionCol = titleCol === 0 && header.length > 1 ? 1 : -1
+  const descCol = descriptionCol === -1 ? fallbackDescriptionCol : descriptionCol
+
+  return rows
+    .map((row) => ({ title: row[titleCol]?.trim() ?? '', description: descCol === -1 ? '' : (row[descCol]?.trim() ?? '') }))
+    .filter((r) => r.title !== '')
 }

@@ -4,7 +4,9 @@ import { Link, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { ApiError, api } from '@/api/client'
 import type { AdminParticipant, AdminView } from '@/api/types'
+import { BudgetInput } from '@/components/BudgetInput'
 import { CopyField } from '@/components/CopyField'
+import { DatePicker } from '@/components/DatePicker'
 import { ErrorAlert } from '@/components/ErrorAlert'
 import { Field } from '@/components/Field'
 import { Loading } from '@/components/Loading'
@@ -16,7 +18,7 @@ import { Progress } from '@/components/ui/progress'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { eventUrl } from '@/lib/format'
+import { eventUrl, formatBudget, parseBudget } from '@/lib/format'
 import { session } from '@/lib/session'
 import NotFoundPage from '../NotFoundPage'
 import { EventHeader } from '../event/EventHeader'
@@ -64,7 +66,7 @@ export default function AdminPage() {
         <Card className="mx-auto w-full max-w-md">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <KeyRound className="size-5 text-gold" /> Organizer login
+              <KeyRound className="size-5 text-highlight" /> Organizer login
             </CardTitle>
             <CardDescription>Enter the admin password you chose when you created the event.</CardDescription>
           </CardHeader>
@@ -274,7 +276,7 @@ function EditDetails({
   const [form, setForm] = useState({
     name: event.name,
     format: event.format,
-    budget: event.budget ?? '',
+    budget: String(parseBudget(event.budget) ?? ''),
     exchange_date: event.exchange_date ?? '',
     description: event.description,
   })
@@ -289,7 +291,7 @@ function EditDetails({
         await api.updateEvent(slug, token, {
           name: form.name.trim(),
           format: form.format.trim(),
-          budget: form.budget.trim() || null,
+          budget: formatBudget(parseBudget(form.budget)),
           exchange_date: form.exchange_date || null,
           description: form.description.trim(),
         }),
@@ -318,10 +320,10 @@ function EditDetails({
               <Input id="edit-format" required maxLength={60} value={form.format} onChange={(e) => set({ format: e.target.value })} />
             </Field>
             <Field label="Budget" htmlFor="edit-budget">
-              <Input id="edit-budget" maxLength={60} value={form.budget} onChange={(e) => set({ budget: e.target.value })} />
+              <BudgetInput id="edit-budget" value={form.budget} onChange={(budget) => set({ budget })} />
             </Field>
             <Field label="Gift exchange date" htmlFor="edit-date">
-              <Input id="edit-date" type="date" value={form.exchange_date} onChange={(e) => set({ exchange_date: e.target.value })} />
+              <DatePicker id="edit-date" value={form.exchange_date} onChange={(exchange_date) => set({ exchange_date })} />
             </Field>
           </div>
           <Field label="Notes for participants" htmlFor="edit-description">

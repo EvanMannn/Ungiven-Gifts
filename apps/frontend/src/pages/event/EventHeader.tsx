@@ -13,12 +13,12 @@ export function EventHeader({ event, actions }: { event: EventPublic; actions?: 
           <Badge>{event.format}</Badge>
           {event.budget && (
             <span className="inline-flex items-center gap-1">
-              <Coins className="size-4 text-gold" aria-hidden /> {event.budget}
+              <Coins className="size-4 text-highlight" aria-hidden /> {event.budget}
             </span>
           )}
           {event.exchange_date && (
             <span className="inline-flex items-center gap-1">
-              <CalendarDays className="size-4 text-gold" aria-hidden /> {formatDate(event.exchange_date)}
+              <CalendarDays className="size-4 text-highlight" aria-hidden /> {formatDate(event.exchange_date)}
             </span>
           )}
         </div>

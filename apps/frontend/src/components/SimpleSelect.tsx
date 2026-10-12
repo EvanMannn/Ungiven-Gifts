@@ -22,7 +22,9 @@ export function SimpleSelect({
   'aria-label'?: string
 }) {
   return (
-    <Select value={value || undefined} onValueChange={onChange} disabled={disabled}>
+    // Always pass the value, even '': Radix shows the placeholder for ''. Passing undefined would
+    // hand control to Radix, which then keeps showing the last pick after we clear it.
+    <Select value={value} onValueChange={onChange} disabled={disabled}>
       <SelectTrigger id={id} className={cn('w-full', className)} aria-label={ariaLabel}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
