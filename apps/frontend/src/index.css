@@ -1,0 +1,86 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* shadcn components use `dark:` variants; the site is dark-only, so <html> always has .dark */
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 0.625rem;
+
+  --background: #0b100e;
+  --foreground: #ece8dc;
+  --card: #131a17;
+  --card-foreground: #ece8dc;
+  --popover: #131a17;
+  --popover-foreground: #ece8dc;
+
+  /* Pine green: main actions */
+  --primary: #2f8a57;
+  --primary-foreground: #f5f2e8;
+  --secondary: #1c2621;
+  --secondary-foreground: #ece8dc;
+  --muted: #1a221e;
+  --muted-foreground: #98a59d;
+  --accent: #1f2b25;
+  --accent-foreground: #ece8dc;
+  --destructive: #c0392b;
+
+  --border: #26332c;
+  --input: #2c3a33;
+  --ring: #d4af37;
+
+  /* Festive accents */
+  --holly: #c0392b;
+  --holly-light: #e07468;
+  --gold: #d4af37;
+  --gold-foreground: #1a1406;
+  --pine-deep: #123a26;
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-holly: var(--holly);
+  --color-holly-light: var(--holly-light);
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-pine-deep: var(--pine-deep);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    color-scheme: dark;
+  }
+  body {
+    @apply min-h-dvh bg-background text-foreground antialiased;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgb(47 138 87 / 0.18), transparent),
+      radial-gradient(ellipse 40% 30% at 100% 0%, rgb(192 57 43 / 0.1), transparent);
+    background-attachment: fixed;
+  }
+}

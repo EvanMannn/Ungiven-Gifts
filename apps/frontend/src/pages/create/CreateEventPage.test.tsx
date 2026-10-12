@@ -1,0 +1,127 @@
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { api } from '@/api/client'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import CreateEventPage from './CreateEventPage'
+
+vi.mock('@/api/client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/api/client')>()),
+  api: { createEvent: vi.fn() },
+}))
+
+function renderPage() {
+  return render(
+    // AppShell provides TooltipProvider in the real app; the page is rendered on its own here.
+    <MemoryRouter>
+      <TooltipProvider>
+        <CreateEventPage />
+      </TooltipProvider>
+    </MemoryRouter>,
+  )
+}
+
+describe('CreateEventPage', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.mocked(api.createEvent).mockReset()
+    // jsdom's scrollTo returns undefined; real browsers now return a Promise. Match the browser so
+    // an effect that accidentally returns scrollTo()'s result fails here too.
+    window.scrollTo = vi.fn(() => Promise.resolve()) as unknown as typeof window.scrollTo
+  })
+
+  it('validates, reviews, creates, and shows the share links', async () => {
+    const user = userEvent.setup()
+    vi.mocked(api.createEvent).mockResolvedValue({
+      slug: 'abc23456',
+      admin_key: 'secret-key',
+      organizer_participant_id: null,
+      organizer_token: null,
+    })
+    renderPage()
+
+    await user.click(screen.getByRole('button', { name: /continue/i }))
+    expect(screen.getByText('A few things need fixing')).toBeInTheDocument()
+
+    await user.type(screen.getByLabelText('Event name'), 'Playgroup Santa')
+    await user.type(screen.getByLabelText(/^Names/), 'Alice\nBob\nCara')
+    await user.type(screen.getByLabelText('Restrictions, one per line'), 'Mono-colored\nNo tutors')
+    await user.click(screen.getByRole('button', { name: /continue/i }))
+
+    // 3 people can't be split evenly, so the groups step has nothing to offer.
+    expect(screen.getByText(/3 people can't be split/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /review/i }))
+
+    expect(screen.getByText('Look good?')).toBeInTheDocument()
+    expect(screen.getByText('Alice, Bob, Cara')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /create event/i }))
+    expect(api.createEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Playgroup Santa',
+        format: 'Commander',
+        restrictions: ['Mono-colored', 'No tutors'],
+        participants: [
+          expect.objectContaining({ name: 'Alice' }),
+          expect.objectContaining({ name: 'Bob' }),
+          expect.objectContaining({ name: 'Cara' }),
+        ],
+      }),
+    )
+    expect(await screen.findByText('Playgroup Santa is ready')).toBeInTheDocument()
+    expect(screen.getByLabelText('Participant link')).toHaveValue(`${window.location.origin}/e/abc23456`)
+    expect(screen.getByLabelText('Admin link')).toHaveValue(`${window.location.origin}/e/abc23456/admin?key=secret-key`)
+    expect(localStorage.getItem('ungiven-gifts:abc23456')).toContain('secret-key')
+  })
+
+  it('shows the API error and stays on review when creation fails', async () => {
+    const user = userEvent.setup()
+    vi.mocked(api.createEvent).mockRejectedValue(new Error('There is nobody Alice is allowed to gift to.'))
+    renderPage()
+
+    await user.type(screen.getByLabelText('Event name'), 'X')
+    await user.type(screen.getByLabelText(/^Names/), 'Alice\nBob')
+    await user.click(screen.getByRole('button', { name: /continue/i }))
+    await user.click(screen.getByRole('button', { name: /review/i }))
+    await user.click(screen.getByRole('button', { name: /create event/i }))
+
+    expect(await screen.findByText('There is nobody Alice is allowed to gift to.')).toBeInTheDocument()
+    expect(screen.getByText('Look good?')).toBeInTheDocument()
+  })
+
+  it('offers only even group sizes and sends the chosen one', async () => {
+    const user = userEvent.setup()
+    vi.mocked(api.createEvent).mockResolvedValue({
+      slug: 'abc23456',
+      admin_key: 'k',
+      organizer_participant_id: null,
+      organizer_token: null,
+    })
+    renderPage()
+
+    await user.type(screen.getByLabelText('Event name'), 'X')
+    await user.type(screen.getByLabelText(/^Names/), 'Alice\nBob\nCara\nDan')
+    await user.click(screen.getByRole('button', { name: /continue/i }))
+
+    await user.click(screen.getByRole('radio', { name: /yes, split/i }))
+    // 4 people: only groups of 2 split evenly into at least two groups.
+    expect(screen.getAllByRole('radio', { name: /per group/i })).toHaveLength(1)
+    await user.click(screen.getByRole('radio', { name: /2 per group/i }))
+    await user.click(screen.getByRole('button', { name: /review/i }))
+
+    expect(screen.getByText('2 groups of 2, assigned randomly')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /create event/i }))
+    expect(api.createEvent).toHaveBeenCalledWith(expect.objectContaining({ group_size: 2 }))
+  })
+
+  it('restores an unsent draft after a reload', async () => {
+    const user = userEvent.setup()
+    const { unmount } = renderPage()
+    await user.type(screen.getByLabelText('Event name'), 'Saved draft')
+    unmount()
+
+    renderPage()
+    expect(screen.getByLabelText('Event name')).toHaveValue('Saved draft')
+  })
+})

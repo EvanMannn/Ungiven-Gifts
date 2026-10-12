@@ -1,0 +1,54 @@
+name: Deploy
+
+# Runs after CI passes on main, so a red build never ships.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+
+jobs:
+  deploy:
+    # A manual run, or a CI run that passed for a push to this repo. The branches filter above only
+    # checks the branch *name*, so without the last two checks a fork's PR from a branch called
+    # "main" could get its code deployed with our secrets.
+    if: >-
+      github.event_name == 'workflow_dispatch' || (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_repository.full_name == github.repository
+      )
+    name: Deploy ${{ matrix.app }} to Vercel
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: backend
+            project_secret: VERCEL_PROJECT_ID_BACKEND
+          - app: frontend
+            project_secret: VERCEL_PROJECT_ID_FRONTEND
+    env:
+      VERCEL_PROJECT_ID: ${{ secrets[matrix.project_secret] }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Deploy exactly the commit CI tested.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Pinned so a CLI release can't change deploys without a commit here. Bump deliberately.
+      - run: npm install --global vercel@63.1.2
+      # Each Vercel project has its Root Directory set to apps/<app>, so the CLI runs from the
+      # repo root and Vercel builds the right folder remotely.
+      - name: Deploy
+        run: vercel deploy --prod --yes --token="${{ secrets.VERCEL_TOKEN }}"

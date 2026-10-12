@@ -1,0 +1,25 @@
+# Local stack: MongoDB + the API in a container. The frontend runs with `npm run dev`
+# (it proxies /api to localhost:8000).
+#   docker compose up --build
+services:
+  mongo:
+    image: mongo:8
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  api:
+    build: ./apps/backend
+    ports:
+      - "8000:8000"
+    environment:
+      MONGODB_URI: mongodb://mongo:27017
+      MONGODB_DB: ungiven_gifts
+      SECRET_KEY: local-dev-secret
+      CORS_ORIGINS: http://localhost:5173
+    depends_on:
+      - mongo
+
+volumes:
+  mongo-data:

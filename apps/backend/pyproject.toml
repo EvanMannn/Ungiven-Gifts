@@ -1,0 +1,38 @@
+[project]
+name = "ungiven-gifts-api"
+version = "0.1.0"
+description = "FastAPI backend for Ungiven Gifts, a Magic: The Gathering secret santa organizer."
+readme = "README.md"
+authors = [
+    { name = "Evan Mann", email = "ejmann900@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi[standard]>=0.143.0",
+    "pydantic-settings>=2.15.0",
+    "pymongo>=4.18.3",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+    "ruff>=0.17.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501"]
